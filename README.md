@@ -1,6 +1,6 @@
 # wiki2txt
-A python script to extract plaintext, links and categories from `wikidumps` (https://dumps.wikimedia.org/enwiki/).<br />
-Designed as a tool to acquire "easily digestible food" (cleaner data) for AI learning software.<br />
+A tool to extract plaintext, links and categories from `wikidumps` (https://dumps.wikimedia.org/enwiki/).<br />
+Designed to prepare "digestible food" (cleaner data) for AI learning software.<br />
 
 Written in Python, utilizes `lxml` parser and leans heavily on the powers of the `re` (regex) library.
 
