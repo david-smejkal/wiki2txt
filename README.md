@@ -24,13 +24,13 @@ Options:
   --version                       show program's version number and exit
   -h, --help                      show this help message and exit
   -i FILE, --input-file=FILE      Intput xml text will come from FILE otherwise from STDIN.
-  -o FILE, --output-file=FILE     Output text will come to FILE otherwise to STDOUT.
+  -o FILE, --output-file=FILE     Output text will go to FILE otherwise to STDOUT.
   -t, --text                      Parse text from wikidump (xml output format).
   -n, --no-text                   Don't parse text from wikidump (DEFAULT).
   -s NUMBER, --skip=NUMBER        Skip NUMBER articles.
   -q, --quiet                     Don't make noise.
   -R, --references                Print references in text (links and categories).
-  -r PREFIX, --redirects=PREFIX   Parse redircts (make "PREFIX.edg" file).
+  -r PREFIX, --redirects=PREFIX   Parse redirects (make "PREFIX.edg" file).
   -l PREFIX, --links=PREFIX       Parse links (make "PREFIX.edg" file).
   -c PREFIX, --categories=PREFIX  Parse categories (make "PREFIX.edg" file).
   -T, --test                      Parse arbitrary text from stdin.
