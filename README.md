@@ -9,7 +9,7 @@ Written in Python, utilizes `lxml` parser and leans heavily on the powers of the
 Optional: Use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment
 
 ```
-$ mkproject --python="`which python2.7`" wiki2txt
+$ mkproject --python="`which python2`" wiki2txt
 $ workon wiki2txt
 (wiki2txt) $ pip install -r requirements.txt
 ```
