@@ -77,7 +77,7 @@ class cArbiter:
                       help="Intput xml text will come from FILE otherwise from STDIN.")
     parser.add_option("-o", "--output-file",
                       dest="output", metavar="FILE",
-                      help="Output text will come to FILE otherwise to STDOUT.")
+                      help="Output text will go to FILE otherwise to STDOUT.")
     parser.add_option("-t", "--text", action="store_true",
                       dest="text", default=False,
                       help="Parse text from wikidump (xml output format).")
@@ -95,7 +95,7 @@ class cArbiter:
                       help="Print references in text (links and categories).")
     parser.add_option("-r", "--redirects",
                       dest="redirects_prefix", metavar="PREFIX",
-                      help="Parse redircts (make \"PREFIX.edg\" file).")
+                      help="Parse redirects (make \"PREFIX.edg\" file).")
     parser.add_option("-l", "--links",
                       dest="links_prefix", metavar="PREFIX",
                       help="Parse links (make \"PREFIX.edg\" file).")
