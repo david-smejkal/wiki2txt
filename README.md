@@ -40,6 +40,8 @@ Options:
 
 ## Download the latest wiki dump
 
+HINT: add `--continue` parameter if you need to resume the download
+
 ```
 $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2
 ```
