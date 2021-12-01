@@ -53,7 +53,7 @@ class WikiData:
 
 
 class cArbiter:
-  """Root class of this script code. Handles parameter parsing."""
+  """Helper / handler of this script. Handles parsing of parameter, printing of progress bar, etc."""
 
 
   #def __init__(self):
