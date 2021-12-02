@@ -5,7 +5,6 @@ Designed to prepare "digestible food" (cleaner data) for AI learning software.<b
 Written in Python, utilizes `lxml` parser and leans heavily on the powers of the `re` (regex) library.
 
 # Installation
-
 Optional: Use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment
 
 ```
@@ -15,7 +14,6 @@ $ workon wiki2txt
 ```
 
 # Usage
-
 ```
 (wiki2txt) $ python wiki2txt.py --help
 Usage: wiki2txt.py [options]
@@ -39,7 +37,6 @@ Options:
 # Examples
 
 ## Download the latest wiki dump
-
 HINT: add `--continue` parameter if you need to resume the download
 
 ```
@@ -47,7 +44,6 @@ $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xm
 ```
 
 ## Decompress a bz2 wiki dump
-
 HINT: add `-k` parameter if you want to preserve the original archive
 
 ```
@@ -55,7 +51,6 @@ $ bzip2 -d enwiki-latest-pages-articles.xml.bz2
 ```
 
 ## Parse a wiki dump to get food for AI
-
 ```
 (wiki2txt) $ python wiki2txt -i enwiki-latest-pages-articles.xml -o latest-food.xml
 ```
