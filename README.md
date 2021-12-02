@@ -6,7 +6,6 @@ Written in Python, utilizes `lxml` parser and leans heavily on the powers of the
 
 # Installation
 Optional: Use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment
-
 ```
 $ mkproject --python="`which python2`" wiki2txt
 $ workon wiki2txt
@@ -38,14 +37,12 @@ Options:
 
 ## Download the latest wiki dump
 HINT: add `--continue` parameter if you need to resume the download
-
 ```
 $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2
 ```
 
 ## Decompress a bz2 wiki dump
 HINT: add `-k` parameter if you want to preserve the original archive
-
 ```
 $ bzip2 -d enwiki-latest-pages-articles.xml.bz2
 ```
