@@ -6,14 +6,14 @@ Written in Python, utilizes `lxml` parser and leans heavily on the powers of the
 
 # Installation
 Optional: Use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment
-```s
+```csharp
 $ mkproject --python="`which python2`" wiki2txt
 $ workon wiki2txt
 (wiki2txt) $ pip install -r requirements.txt
 ```
 
 # Usage
-```js
+```csharp
 (wiki2txt) $ python wiki2txt.py --help
 Usage: wiki2txt.py [options]
 
@@ -47,18 +47,18 @@ Options:
 
 ## Download the latest wiki dump
 HINT: add `--continue` parameter if you need to resume the download
-```
+```csharp
 $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2
 ```
 
 ## Decompress a bz2 wiki dump
 HINT: add `-k` parameter if you want to preserve the original archive
-```
+```csharp
 $ bzip2 -d enwiki-latest-pages-articles.xml.bz2
 ```
 
 ## Parse a wiki dump to get food for AI
-```
+```csharp
 (wiki2txt) $ python wiki2txt -i enwiki-latest-pages-articles.xml -o latest-food.xml
 ```
 
