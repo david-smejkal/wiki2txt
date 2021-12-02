@@ -1,6 +1,6 @@
 # wiki2txt
 
-ANNOUNCEMENT: v0.3.1 isn't parsing text with python v2.7 this problem is worked on and will be fixed asap.
+**ANNOUNCEMENT:** v0.3.1 isn't parsing latest wikidumps with python v2.7 for some reason this problem is worked on and will be fixed asap.
 
 A tool to extract plaintext, links and categories from `wikidumps` (https://dumps.wikimedia.org/enwiki/).<br />
 Designed to prepare "digestible food" (cleaner data) for AI learning software.<br />
@@ -33,7 +33,7 @@ Options:
   -r PREFIX, --redirects=PREFIX   Parse redirects (make "PREFIX.edg" file).
   -l PREFIX, --links=PREFIX       Parse links (make "PREFIX.edg" file).
   -c PREFIX, --categories=PREFIX  Parse categories (make "PREFIX.edg" file).
-  -T, --test                      Parse arbitrary text from stdin.
+  -T, --test                      Parse arbitrary text from stdin. Use Ctrl + D to signify end of input.
 ```
 
 # Output Format
@@ -48,19 +48,26 @@ Options:
 
 # Examples
 
-## Download the latest wiki dump
-HINT: add `--continue` parameter if you need to resume the download
+## Quick example
+```console
+(wiki2txt) $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles1.xml-p1p41242.bz2 # Download: 234 MB
+(wiki2txt) $ bzip2 -d enwiki-latest-pages-articles1.xml-p1p41242.bz2 # Decompress: 893 MB
+(wiki2txt) $ wiki2txt.py -t -i enwiki-latest-pages-articles1.xml-p1p41242.bz2 -o latest-pages-articles1-parsed.xml
+```
+
+## Download
+**HINT:** add `--continue` parameter if you need to resume the download
 ```csharp
 $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2
 ```
 
-## Decompress a bz2 wiki dump
-HINT: add `-k` parameter if you want to preserve the original archive
+## Decompress
+**HINT:** add `-k` parameter if you want to preserve the original archive
 ```console
 $ bzip2 -d enwiki-latest-pages-articles.xml.bz2
 ```
 
-## Parse a wiki dump to get food for AI
+## Parse
 ```shell-session
 (wiki2txt) $ python wiki2txt.py -t -i enwiki-latest-pages-articles.xml -o latest-food.xml
 ```

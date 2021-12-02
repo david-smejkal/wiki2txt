@@ -104,7 +104,7 @@ class cArbiter:
                       help="Parse categories (make \"PREFIX.edg\" file).")
     parser.add_option("-T", "--test", action="store_true",
                       dest="test", default=False,
-                      help="Parse arbitrary text from stdin.")
+                      help="Parse arbitrary text from stdin. Use Ctrl + D to signify end of input.")
     (options, args) = parser.parse_args()
 
     self.arg_text = options.text
@@ -937,7 +937,7 @@ if __name__ == "__main__":
   # testing? (input from stdin)
   if parser.arg_test:
     print "INPUT:"
-    inputStr = parser.arg_input.read()
+    inputStr = parser.arg_input.read() # use Ctrl + D to signify end of input
     print "\nOUTPUT:"
     parser.GetPlainTextLinksCategoriesFromWikiDump(inputStr)
     print parser.wikiData.plainText
