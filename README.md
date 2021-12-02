@@ -6,14 +6,14 @@ Written in Python, utilizes `lxml` parser and leans heavily on the powers of the
 
 # Installation
 Optional: Use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment
-```
+```s
 $ mkproject --python="`which python2`" wiki2txt
 $ workon wiki2txt
 (wiki2txt) $ pip install -r requirements.txt
 ```
 
 # Usage
-```
+```js
 (wiki2txt) $ python wiki2txt.py --help
 Usage: wiki2txt.py [options]
 
@@ -31,6 +31,16 @@ Options:
   -l PREFIX, --links=PREFIX       Parse links (make "PREFIX.edg" file).
   -c PREFIX, --categories=PREFIX  Parse categories (make "PREFIX.edg" file).
   -T, --test                      Parse arbitrary text from stdin.
+```
+
+# Output Format
+```xml
+<article>
+  <id>ID</id>
+  <title>TITLE</title>
+  <text>PLAINTEXT</text>
+  <categories>CATEGORIES</categories>
+</article>
 ```
 
 # Examples
