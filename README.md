@@ -53,12 +53,12 @@ $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xm
 
 ## Decompress a bz2 wiki dump
 HINT: add `-k` parameter if you want to preserve the original archive
-```csharp
+```console
 $ bzip2 -d enwiki-latest-pages-articles.xml.bz2
 ```
 
 ## Parse a wiki dump to get food for AI
-```csharp
+```console
 (wiki2txt) $ python wiki2txt -i enwiki-latest-pages-articles.xml -o latest-food.xml
 ```
 
