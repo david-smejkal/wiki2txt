@@ -58,7 +58,7 @@ $ bzip2 -d enwiki-latest-pages-articles.xml.bz2
 ```
 
 ## Parse a wiki dump to get food for AI
-```console
+```shell-session
 (wiki2txt) $ python wiki2txt -i enwiki-latest-pages-articles.xml -o latest-food.xml
 ```
 
