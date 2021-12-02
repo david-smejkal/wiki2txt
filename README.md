@@ -1,4 +1,7 @@
 # wiki2txt
+
+ANNOUNCEMENT: v0.3.1 isn't parsing text with python v2.7 this problem is worked on and will be fixed asap.
+
 A tool to extract plaintext, links and categories from `wikidumps` (https://dumps.wikimedia.org/enwiki/).<br />
 Designed to prepare "digestible food" (cleaner data) for AI learning software.<br />
 
@@ -59,7 +62,7 @@ $ bzip2 -d enwiki-latest-pages-articles.xml.bz2
 
 ## Parse a wiki dump to get food for AI
 ```shell-session
-(wiki2txt) $ python wiki2txt -i enwiki-latest-pages-articles.xml -o latest-food.xml
+(wiki2txt) $ python wiki2txt.py -t -i enwiki-latest-pages-articles.xml -o latest-food.xml
 ```
 
 # v0.3.1 vanilla release
