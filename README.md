@@ -51,7 +51,7 @@ Options:
 ## Quick example
 ```console
 (wiki2txt) $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles1.xml-p1p41242.bz2 # Download: 234 MB
-(wiki2txt) $ bzip2 -d enwiki-latest-pages-articles1.xml-p1p41242.bz2 # Decompress: 893 MB
+(wiki2txt) $ bzip2 --decompress enwiki-latest-pages-articles1.xml-p1p41242.bz2 # Decompress: 893 MB
 (wiki2txt) $ wiki2txt.py -t -i enwiki-latest-pages-articles1.xml-p1p41242.bz2 -o latest-pages-articles1-parsed.xml
 ```
 
@@ -64,7 +64,7 @@ $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xm
 ## Decompress
 **HINT:** add `-k` parameter if you want to preserve the original archive
 ```console
-$ bzip2 -d enwiki-latest-pages-articles.xml.bz2
+$ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2
 ```
 
 ## Parse
