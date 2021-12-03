@@ -33,7 +33,7 @@ Options:
   -r PREFIX, --redirects=PREFIX   Parse redirects (make "PREFIX.edg" file).
   -l PREFIX, --links=PREFIX       Parse links (make "PREFIX.edg" file).
   -c PREFIX, --categories=PREFIX  Parse categories (make "PREFIX.edg" file).
-  -T, --test                      Parse arbitrary text from stdin. Use Ctrl + D to signify end of input.
+  -T, --test                      Parse arbitrary text from stdin. Use Ctrl + D to end input.
 ```
 
 # Output Format

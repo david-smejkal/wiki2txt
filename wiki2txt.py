@@ -104,7 +104,7 @@ class cArbiter:
                       help="Parse categories (make \"PREFIX.edg\" file).")
     parser.add_option("-T", "--test", action="store_true",
                       dest="test", default=False,
-                      help="Parse arbitrary text from stdin. Use Ctrl + D to signify end of input.")
+                      help="Parse arbitrary text from stdin. Use Ctrl + D to end input.")
     (options, args) = parser.parse_args()
 
     self.arg_text = options.text
