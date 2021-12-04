@@ -18,19 +18,19 @@ $ workon wiki2txt
 Usage: wiki2txt.py [options]
 
 Options:
-  --version                   show program's version number and exit
-  -h, --help                  show this help message and exit
-  -i FILE, --input-file=FILE  Intput xml text will come from FILE otherwise from STDIN.
-  -o FILE, --output-file=FILE Output text will go to FILE otherwise to STDOUT.
-  -n, --no-text               Don't parse text (can be used to parse only links, references and/or categories).
-  -t, --text                  Parse text from input to output (DEFAULT).
-  -s NUMBER, --skip=NUMBER    Skip NUMBER of articles and append to output files.
-  -q, --quiet                 Don't make any noise.
-  -R, --references            Print references in text (links and categories).
-  -r FILE, --redirects=FILE   Outsource redirect articles to the specified file.
-  -l FILE, --links=FILE       Capture articles' links in the specified file).
-  -c FILE, --categories=FILE  Capture articles' categories in the specified file.
-  -T, --test                  Parse input from STDIN. Use Ctrl + D to end input.
+  --version                    show program's version number and exit
+  -h, --help                   show this help message and exit
+  -i FILE, --input-file=FILE   Intput xml text will come from FILE otherwise from STDIN.
+  -o FILE, --output-file=FILE  Output text will go to FILE otherwise to STDOUT.
+  -n, --no-text                Don't parse text (designed for use with -r -l -c options).
+  -t, --text                   Parse text from input to output (DEFAULT).
+  -s NUMBER, --skip=NUMBER     Skip NUMBER of articles and append to output files.
+  -q, --quiet                  Don't make any noise.
+  -R, --references             Print references in text (links and categories).
+  -r FILE, --redirects=FILE    Outsource redirect articles to the specified file.
+  -l FILE, --links=FILE        Capture articles' links in the specified file).
+  -c FILE, --categories=FILE   Capture articles' categories in the specified file.
+  -T, --test                   Parse input from STDIN. Use Ctrl + D to end input.
 ```
 
 # Output Format

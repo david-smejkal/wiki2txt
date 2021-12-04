@@ -70,7 +70,7 @@ class cArbiter:
     """This function is self-explained."""
     parser = optparse.OptionParser(
               usage = "usage: %prog [options]",
-              version = "%prog 0.3.1")
+              version = "%prog 0.4.0")
 
     parser.add_option("-i", "--input-file",
                       dest="input", metavar="FILE",
@@ -80,7 +80,7 @@ class cArbiter:
                       help="Output text will go to FILE otherwise to STDOUT.")
     parser.add_option("-n", "--no-text", action="store_false",
                       dest="text", default=False,
-                      help="Don't parse text (can be used to parse only links, references and/or categories).")
+                      help="Don't parse text (designed for use with -r -l -c options).")
     parser.add_option("-t", "--text", action="store_true",
                       dest="text", default=True,
                       help="Parse text from input to output (DEFAULT).")
