@@ -2,7 +2,7 @@
 A tool to extract plaintext, links and categories from `wikidumps` (https://dumps.wikimedia.org/enwiki/).<br />
 Designed to prepare "digestible food" (cleaner data) for AI learning software.<br />
 
-Written in Python, utilizes `lxml` parser and leans heavily on the powers of the `re` (regex) library.
+Written in Python, utilizes `lxml` SAX parser (easy on memory usage) and leans heavily on the powers of the `re` (regex) library to extract clean plaintext.
 
 # Installation
 Optional: Use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment
