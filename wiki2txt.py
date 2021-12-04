@@ -10,7 +10,7 @@ import optparse
 import locale
 
 # non-standard libraries
-import lxml.etree # in debian (aptitude install python-lxml)
+import lxml.etree # pip install lxml # aptitude install python-lxml
 #from BeautifulSoup import BeautifulSoup
 
 # Marek Schmidt 2007, David Smejkal 2008.
@@ -78,33 +78,33 @@ class cArbiter:
     parser.add_option("-o", "--output-file",
                       dest="output", metavar="FILE",
                       help="Output text will go to FILE otherwise to STDOUT.")
-    parser.add_option("-t", "--text", action="store_true",
-                      dest="text", default=False,
-                      help="Parse text from wikidump (xml output format).")
     parser.add_option("-n", "--no-text", action="store_false",
                       dest="text", default=False,
-                      help="Don't parse text from wikidump (DEFAULT).")
+                      help="Don't parse text (can be used to parse only links, references and/or categories).")
+    parser.add_option("-t", "--text", action="store_true",
+                      dest="text", default=True,
+                      help="Parse text from input to output (DEFAULT).")
     parser.add_option("-s", "--skip",
                       dest="skip", metavar="NUMBER",
-                      help="Skip NUMBER articles.")
+                      help="Skip NUMBER of articles and append to output files.")
     parser.add_option("-q", "--quiet", action="store_false",
                       dest="verbose", default=True,
-                      help="Don't make noise.")
+                      help="Don't make any noise.")
     parser.add_option("-R", "--references", action="store_true",
                       dest="references", default=False,
                       help="Print references in text (links and categories).")
     parser.add_option("-r", "--redirects",
-                      dest="redirects_prefix", metavar="PREFIX",
-                      help="Parse redirects (make \"PREFIX.edg\" file).")
+                      dest="redirects_file", metavar="PREFIX",
+                      help="Outsource redirect pages to a separate file.")
     parser.add_option("-l", "--links",
-                      dest="links_prefix", metavar="PREFIX",
-                      help="Parse links (make \"PREFIX.edg\" file).")
+                      dest="links_file", metavar="PREFIX",
+                      help="Outsource links to an EDGE (\"PREFIX.edg\") file).")
     parser.add_option("-c", "--categories",
-                      dest="categories_prefix", metavar="PREFIX",
-                      help="Parse categories (make \"PREFIX.edg\" file).")
+                      dest="categories_file", metavar="PREFIX",
+                      help="Outsource links to an EDGE (make \"PREFIX.edg\") file.")
     parser.add_option("-T", "--test", action="store_true",
                       dest="test", default=False,
-                      help="Parse arbitrary text from stdin. Use Ctrl + D to end input.")
+                      help="Parse input from STDIN. Use Ctrl + D to end input.")
     (options, args) = parser.parse_args()
 
     self.arg_text = options.text
@@ -150,11 +150,11 @@ class cArbiter:
         self.arg_output_name = None
         self.arg_output = None
 
-    self.arg_redirects_prefix = options.redirects_prefix
+    self.arg_redirects_file = options.redirects_file
 
-    self.arg_links_prefix = options.links_prefix
+    self.arg_links_file = options.links_file
 
-    self.arg_categories_prefix = options.categories_prefix
+    self.arg_categories_file = options.categories_file
 
     self.arg_test = options.test
     if self.arg_test:
@@ -358,7 +358,7 @@ class cParser(cArbiter):
 
 
   def ParseClosedTag(self, matchObj):
-    """Parse tags.. if nested get rid of deepest elemnet and repeat."""
+    """Parse tags.. if nested get rid of the deepest element and repeat."""
     #print "closedTag"
     #ff = re.compile(r"(?:<|(?:&lt;))", re.DOTALL)
     #if matchObj.group(1).find("<"):
@@ -371,7 +371,7 @@ class cParser(cArbiter):
 
 
   def ParseOpennedTag(self, matchObj):
-    """Parse tags.. if nested get rid of deepest elemnet and repeat."""
+    """Parse tags.. if nested get rid of the deepest element and repeat."""
     #print "opennedTag"
     #return ""
     # matchObj.group(0) text with tags "<p>aa</p>"
@@ -476,7 +476,7 @@ class cParser(cArbiter):
   def ParseCategory(self, matchObj):
     """ """
     #print "ParseCategory"
-    if self.arg_references or self.arg_categories_prefix:
+    if self.arg_references or self.arg_categories_file:
       index = matchObj.group(1).find('|')
       if index == -1:
           category = self.RepairArticleName(matchObj.group(1))
@@ -523,14 +523,14 @@ class cParser(cArbiter):
 
 
     if linkSeparator == -1: # self reference (e.g. [[aaa]])
-      if self.arg_links_prefix:
+      if self.arg_links_file:
         link = self.RepairArticleName(annotation)
         self.wikiData.linkList.append(link)
       if not self.arg_references:
         return annotation
       retStr += "target=\"" + annotation + "\">" + annotation
     else:
-      if self.arg_links_prefix:
+      if self.arg_links_file:
         link = self.RepairArticleName(annotation[:linkSeparator])
         self.wikiData.linkList.append(link)
       if not self.arg_references:
@@ -593,7 +593,7 @@ class cParser(cArbiter):
         self.wikiData.plainText = "<redirect target=\"" + self.wikiRedRE.sub("\g<1>", text) + "\"/>"
         return
 
-    if self.arg_redirects_prefix:
+    if self.arg_redirects_file:
       if text[:9].upper() == "#REDIRECT":
         self.wikiData.redirect = self.RepairArticleName(self.wikiRedRE.sub("\g<1>", text))
         return
@@ -663,7 +663,7 @@ class cParser(cArbiter):
     text = self.wikiStaRE.sub(self.ParseSoup, text)
 
     ### DELETING
-    if self.arg_text or self.arg_categories_prefix: # if parsing text, categories need to be cut away
+    if self.arg_text or self.arg_categories_file: # if parsing text, categories need to be cut away
       # wiki categories, i.e. [[Category:Anarchism| ]]
       text = self.wikiCatRE.sub(self.ParseCategory, text)
 
@@ -718,32 +718,52 @@ class cParser(cArbiter):
     return
 
 
+  def get_etree_and_namespace(self, file):
+      events = ("start", "start-ns", "end")
+      root = None
+      namespaces = {}
+      context = lxml.etree.iterparse(file, events)
+      context = iter(context)
+      event, elem = context.next()
+      if event == "start-ns":
+          if elem[0] in namespaces and namespaces[elem[0]] != elem[1]:
+              # NOTE: It is perfectly valid to have the same prefix refer
+              #     to different URI namespaces in different parts of the
+              #     document. This exception serves as a reminder that this
+              #     solution is not robust.    Use at your own peril.
+              raise KeyError("Duplicate prefix with different URI found.")
+          namespaces[elem[0]] = "%s" % elem[1]
+      elif event == "start":
+          if root is None:
+              root = elem
+      
+      return context, namespaces[''] if '' in namespaces else namespaces
+
+
   def ParseWiki(self):
     """Parse text, links, categories from wikidump"""
-
-    count = 0
-
+    
     # getting file size
     if self.arg_input != sys.stdin and self.arg_output != sys.stdout and self.arg_verbose:
       inputFileSize = self.GetFileSize(self.arg_input)
       oldRet = ("",0)
 
-    # setting skip
-    if self.arg_skip:
-      count = self.arg_skip
-
-    # initializing wiki2xml parser
-    try:
-      context = lxml.etree.iterparse(self.arg_input, events = ("start", "end"))
-      context = iter(context)
+    try: # to initialize wiki2xml parser
+      context, ns = self.get_etree_and_namespace(self.arg_input)
+      #context = lxml.etree.iterparse(self.arg_input, events = ("start", "end"))
+      #context = iter(context)
       event, root = context.next()
     except:
       raise
       sys.stderr.write("\nERROR: Bad input file (not a wikidump), try \"-T\" for testing purposes.\n")
 
-    # skipping
+    # setting skip
+    count = 0
     if self.arg_skip:
+      count = self.arg_skip
 
+    # skipping N number of articles
+    if self.arg_skip:
       try:
         for i in range(count):
           event, element = context.next()
@@ -761,39 +781,42 @@ class cParser(cArbiter):
           sys.stdout.write("\nINFO: Whole wikidump skipped.\n")
         sys.exit(0)
 
-    nsdict = {'ns':'http://www.mediawiki.org/xml/export-0.3/'}
+    # prepare namespace variables (later used identifying elements of the tree)
+    nsdict = {'ns' : ns}
+    ns = '{%s}' % ns
 
     # opening .lnk and .cat files
-    if self.arg_links_prefix:
+    if self.arg_links_file:
       if self.arg_skip:
-        self.arg_lnkFile = open(self.arg_links_prefix+".edg", "a")
+        self.arg_lnkFile = open(self.arg_links_file, "a")
       else:
-        self.arg_lnkFile = open(self.arg_links_prefix+".edg", "w")
+        self.arg_lnkFile = open(self.arg_links_file, "w")
 
-    if self.arg_categories_prefix:
+    if self.arg_categories_file:
       if self.arg_skip:
-        self.arg_catFile = open(self.arg_categories_prefix+".edg", "a")
+        self.arg_catFile = open(self.arg_categories_file, "a")
       else:
-        self.arg_catFile = open(self.arg_categories_prefix+".edg", "w")
+        self.arg_catFile = open(self.arg_categories_file, "w")
 
-    if self.arg_redirects_prefix:
+    if self.arg_redirects_file:
       if self.arg_skip:
-        self.arg_redFile = open(self.arg_redirects_prefix+".edg", "a")
+        self.arg_redFile = open(self.arg_redirects_file, "a")
       else:
-        self.arg_redFile = open(self.arg_redirects_prefix+".edg", "w")
+        self.arg_redFile = open(self.arg_redirects_file, "w")
 
     for event, element in context:
 
       try:
 
         count += 1
+
         self.wikiData.__init__()
         # percentage
         if self.arg_input != sys.stdin and self.arg_output != sys.stdout and self.arg_verbose:
           currentFileSize = self.arg_input.tell()
           oldRet = self.PrintProgress(inputFileSize, currentFileSize, oldRet)
 
-        if element.tag == "{http://www.mediawiki.org/xml/export-0.3/}page" and event == "end":
+        if element.tag == (ns + "page") and event == "end":
 
           titles = element.xpath (u"ns:title/text()", namespaces=nsdict)
           ids = element.xpath (u"ns:id/text()", namespaces=nsdict)
@@ -822,17 +845,17 @@ class cParser(cArbiter):
           redirectText = None
           repairedTitle = self.RepairArticleName(title)
 
-          if self.arg_links_prefix:
+          if self.arg_links_file:
             linkText = ""
             for i in self.wikiData.linkList:
               linkText += repairedTitle + '\t' + i + '\n'
 
-          if self.arg_categories_prefix:
+          if self.arg_categories_file:
             categoryText = ""
             for i in self.wikiData.categoryList:
               categoryText += repairedTitle + '\t' + i + '\n'
 
-          if self.arg_redirects_prefix:
+          if self.arg_redirects_file:
             if self.wikiData.redirect is not None:
               redirectText = repairedTitle + '\t' + self.wikiData.redirect + '\n'
 
@@ -864,7 +887,7 @@ class cParser(cArbiter):
                   categoriesText += "<category target=\"" + i + "\"/>"
                 categoriesEl.text = categoriesText
 
-              lxml.etree.ElementTree(pageEl).write(self.arg_output)
+              lxml.etree.ElementTree(pageEl).write(self.arg_output, encoding='utf-8')
 
           # free every page element (otherwise the RAM would overflow eventually)
           element.clear()
@@ -872,32 +895,32 @@ class cParser(cArbiter):
             del element.getparent()[0]
 
       except KeyboardInterrupt:
-        sys.stderr.write("\nWARNING: Premature exit (not all text is parsed).\n")
+        sys.stderr.write("\nWARNING: Prematurely aborted parsing (not all articles parsed).\n")
         if self.arg_input != sys.stdin and self.arg_output != sys.stdout:
-          sys.stderr.write("WARNING: If you wish to presume parsing from here, run it again with \"-s "+str(count)+"\" parameter.\n")
+          sys.stderr.write("WARNING: If you wish to resume parsing from where this error occured you can run wiki2txt again with \"-s "+str(count)+"\" parameter.\n")
         element.clear()
         while element.getprevious() is not None:
           del element.getparent()[0]
-        if self.arg_links_prefix:
+        if self.arg_links_file:
           self.arg_lnkFile.close()
-        if self.arg_categories_prefix:
+        if self.arg_categories_file:
           self.arg_catFile.close()
-        if self.arg_redirects_prefix:
+        if self.arg_redirects_file:
           self.arg_redFile.close()
         break
 
       except IOError:
         sys.stderr.write("\nERROR: File too large, propably filesystem problem.\n")
         if self.arg_input != sys.stdin and self.arg_output != sys.stdout:
-          sys.stderr.write("WARNING: If you wish to presume parsing from here, run it again with \"-S "+str(count)+"\" parameter.\n")
+          sys.stderr.write("WARNING: If you wish to resume parsing from where this error occured you can run wiki2txt again with \"-S "+str(count)+"\" parameter.\n")
         element.clear()
         while element.getprevious() is not None:
           del element.getparent()[0]
-        if self.arg_links_prefix:
+        if self.arg_links_file:
           self.arg_lnkFile.close()
-        if self.arg_categories_prefix:
+        if self.arg_categories_file:
           self.arg_catFile.close()
-        if self.arg_redirects_prefix:
+        if self.arg_redirects_file:
           self.arg_redFile.close()
         break
 
@@ -916,11 +939,11 @@ class cParser(cArbiter):
       element.clear()
       while element.getprevious() is not None:
         del element.getparent()[0]
-      if self.arg_links_prefix:
+      if self.arg_links_file:
         self.arg_lnkFile.close()
-      if self.arg_categories_prefix:
+      if self.arg_categories_file:
         self.arg_catFile.close()
-      if self.arg_redirects_prefix:
+      if self.arg_redirects_file:
         self.arg_redFile.close()
 
 #-------------------------------</CLASSES>-------------------------------------#
@@ -943,9 +966,12 @@ if __name__ == "__main__":
     print parser.wikiData.plainText
     sys.exit(0)
 
-  # do the actual parsing
-  if parser.arg_text or parser.arg_links_prefix or parser.arg_categories_prefix or parser.arg_redirects_prefix:
+  # do the actual parsing as long as some output is expected to be produced
+  if parser.arg_text or parser.arg_links_file or parser.arg_categories_file or parser.arg_redirects_file:
     parser.ParseWiki()
+  else:
+    if parser.arg_verbose:
+      sys.stdout.write("\nINFO: Ran with options that didn't result in any output to be parsed. Try to run the script with different options.\n")
 
   del parser
 
