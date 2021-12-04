@@ -1,7 +1,4 @@
 # wiki2txt
-
-**ANNOUNCEMENT:** v0.3.1 isn't parsing latest wikidumps with python v2.7 for some reason this problem is worked on and will be fixed asap.
-
 A tool to extract plaintext, links and categories from `wikidumps` (https://dumps.wikimedia.org/enwiki/).<br />
 Designed to prepare "digestible food" (cleaner data) for AI learning software.<br />
 
@@ -21,19 +18,19 @@ $ workon wiki2txt
 Usage: wiki2txt.py [options]
 
 Options:
-  --version                       show program's version number and exit
-  -h, --help                      show this help message and exit
-  -i FILE, --input-file=FILE      Intput xml text will come from FILE otherwise from STDIN.
-  -o FILE, --output-file=FILE     Output text will go to FILE otherwise to STDOUT.
-  -t, --text                      Parse text from wikidump (xml output format).
-  -n, --no-text                   Don't parse text from wikidump (DEFAULT).
-  -s NUMBER, --skip=NUMBER        Skip NUMBER articles.
-  -q, --quiet                     Don't make noise.
-  -R, --references                Print references in text (links and categories).
-  -r PREFIX, --redirects=PREFIX   Parse redirects (make "PREFIX.edg" file).
-  -l PREFIX, --links=PREFIX       Parse links (make "PREFIX.edg" file).
-  -c PREFIX, --categories=PREFIX  Parse categories (make "PREFIX.edg" file).
-  -T, --test                      Parse arbitrary text from stdin. Use Ctrl + D to end input.
+  --version                   show program's version number and exit
+  -h, --help                  show this help message and exit
+  -i FILE, --input-file=FILE  Intput xml text will come from FILE otherwise from STDIN.
+  -o FILE, --output-file=FILE Output text will go to FILE otherwise to STDOUT.
+  -n, --no-text               Don't parse text (can be used to parse only links, references and/or categories).
+  -t, --text                  Parse text from input to output (DEFAULT).
+  -s NUMBER, --skip=NUMBER    Skip NUMBER of articles and append to output files.
+  -q, --quiet                 Don't make any noise.
+  -R, --references            Print references in text (links and categories).
+  -r FILE, --redirects=FILE   Outsource redirect articles to the specified file.
+  -l FILE, --links=FILE       Capture articles' links in the specified file).
+  -c FILE, --categories=FILE  Capture articles' categories in the specified file.
+  -T, --test                  Parse input from STDIN. Use Ctrl + D to end input.
 ```
 
 # Output Format
@@ -48,29 +45,26 @@ Options:
 
 # Examples
 
-## Quick example
+## Download > Decompress > Parse
 ```console
 (wiki2txt) $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles1.xml-p1p41242.bz2 # Download: 234 MB
 (wiki2txt) $ bzip2 --decompress enwiki-latest-pages-articles1.xml-p1p41242.bz2 # Decompress: 893 MB
-(wiki2txt) $ wiki2txt.py -t -i enwiki-latest-pages-articles1.xml-p1p41242.bz2 -o latest-pages-articles1-parsed.xml
+(wiki2txt) $ wiki2txt.py -i enwiki-latest-pages-articles1.xml-p1p41242.bz2 -o latest-pages-articles1-parsed.xml -r redirects.edg
 ```
 
-## Download
+## Download latest
 **HINT:** add `--continue` parameter if you need to resume the download
 ```csharp
 $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2
 ```
 
-## Decompress
+## Decompress latest
 **HINT:** add `-k` parameter if you want to preserve the original archive
 ```console
 $ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2
 ```
 
-## Parse
+## Parse latest
 ```shell-session
-(wiki2txt) $ python wiki2txt.py -t -i enwiki-latest-pages-articles.xml -o latest-food.xml
+(wiki2txt) $ python wiki2txt.py -t -i enwiki-latest-pages-articles.xml -o latest-food.xml -r redirects.edg
 ```
-
-# v0.3.1 vanilla release
-As delivered in 2008. Works with Python v2.

@@ -94,14 +94,14 @@ class cArbiter:
                       dest="references", default=False,
                       help="Print references in text (links and categories).")
     parser.add_option("-r", "--redirects",
-                      dest="redirects_file", metavar="PREFIX",
-                      help="Outsource redirect pages to a separate file.")
+                      dest="redirects_file", metavar="FILE",
+                      help="Outsource redirect articles to the specified file.")
     parser.add_option("-l", "--links",
-                      dest="links_file", metavar="PREFIX",
-                      help="Outsource links to an EDGE (\"PREFIX.edg\") file).")
+                      dest="links_file", metavar="FILE",
+                      help="Capture articles' links in the specified file).")
     parser.add_option("-c", "--categories",
-                      dest="categories_file", metavar="PREFIX",
-                      help="Outsource links to an EDGE (make \"PREFIX.edg\") file.")
+                      dest="categories_file", metavar="FILE",
+                      help="Capture articles' categories in the specified file.")
     parser.add_option("-T", "--test", action="store_true",
                       dest="test", default=False,
                       help="Parse input from STDIN. Use Ctrl + D to end input.")
