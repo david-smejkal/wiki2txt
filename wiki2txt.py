@@ -55,17 +55,6 @@ class WikiData:
 class cArbiter:
   """Helper / handler of this script. Handles parsing of parameter, printing of progress bar, etc."""
 
-
-  #def __init__(self):
-    #arg_xml = True
-    #arg_ref = True
-    #arg_input = sys.stdin
-    #arg_output = sys.stdout
-    #self.arg_graph = False
-    #arg_test = False
-    ##arg_stdin = False
-
-
   def GetParams(self):
     """This function is self-explained."""
     parser = optparse.OptionParser(
@@ -161,18 +150,6 @@ class cArbiter:
       self.arg_text = True
 
 
-    #print
-    #print self.arg_generate
-    #sys.exit()
-    #print "xml: ", self.arg_xml
-    #print "ref: ", self.arg_ref
-    #print "input: ", self.arg_input
-    #print "output: ", self.arg_output
-    #print "graph: ", self.arg_graph
-    #print "test: ", self.arg_test
-    #sys.exit(0)
-
-
   def GetFileSize(self, file):
     """Self explained."""
     self.arg_input.seek(0, os.SEEK_END)
@@ -204,10 +181,8 @@ class cArbiter:
 
 
 
-
 class cParser(cArbiter):
   """Most important class... it does the actual parsing."""
-
 
   def __init__(self):
     self.repeat = 1 # flag needed for nested elements
@@ -394,49 +369,6 @@ class cParser(cArbiter):
       self.repeat = 1
     return ret
 
-    #sys.exit()
-    #print tag
-    #sys.exit()
-    #find = matchObj.group(3).find(tag)
-    #if find == -1:
-      #return ""
-    #else:
-      #self.repeat = 1
-      #return tag
-
-    #print "CONTENT:", matchObj.group(0)[len(matchObj.group(1)):]
-    ##print "MATCHED STRING:", matchObj.group(0)
-    #lastOpenTag = None
-    ##r"(?i)((?:<|(?:&lt;))(?P<tagname>\w+)(?:.*?)(?:>|(?:&gt;)))(.*?)(?:<|(?:&lt;))/(?P=tagname)(?:>|(?:&gt;))"
-    #ff = re.compile(r"((?i)(?:<|(?:&lt;))\s*(?P<tagnames>\w+)\s*(?:.*?)(?:>|(?:&gt;)).*?(?:<|(?:&lt;))\s*/\s*(?P=tagnames)\s*(?:>|(?:&gt;)))", re.DOTALL)
-    #for i in ff.findall(matchObj.group(0)[len(matchObj.group(1)):]):
-      #lastOpenTag = i[0]
-      #tagname2 = i[1]
-    #if lastOpenTag != None:
-      #print "last nested: >>", lastOpenTag, "<<"
-      #self.repeat = 1
-      #ret = matchObj.group(0)[:len(matchObj.group(1))+content.rfind(lastOpenTag)] 
-      #if tagname2 != matchObj.group("tagname"):
-        #ret += matchObj.group(0)[len(matchObj.group(1))+content.rfind(lastOpenTag)+len(lastOpenTag):]
-      #print "RET:", ret
-      #return ret
-    #else:
-      #return ""
-    #return ""
-
-    ####print "tag"
-    ###content = matchObj.group(2)
-    ####print content
-    ###content.replace("&lt;", '<').replace("&gt;", '>')
-    ##lastOpenTag = None
-    ##for i in re.findall("(?:<|(?:&lt;))[a-z]+(?:>|(?:&gt;))?", content):
-      ##lastOpenTag = i
-    ##if lastOpenTag != None:
-      ##self.repeat = 1
-      ##return matchObj.group(1)+matchObj.group(2)[:content.rfind(lastOpenTag)]
-    ##else:
-      ##return ""
-
 
   def ParseSoup(self, matchObj):
     """Removes that stinky tag soup."""
@@ -598,7 +530,6 @@ class cParser(cArbiter):
         self.wikiData.redirect = self.RepairArticleName(self.wikiRedRE.sub("\g<1>", text))
         return
 
-
     ### DELETING
     ## GOOD TO PARSE AS FIRST (commented tags can make a mess)
     # comments, i.e. &lt;!-- ... --&gt;
@@ -667,7 +598,6 @@ class cParser(cArbiter):
       # wiki categories, i.e. [[Category:Anarchism| ]]
       text = self.wikiCatRE.sub(self.ParseCategory, text)
 
-
     ### REPLACING
     # wiki http reference, i.e. [http://abc/ ...]
     text = self.wikiHttRE.sub(self.ParseHttp, text)
@@ -718,11 +648,12 @@ class cParser(cArbiter):
     return
 
 
-  def get_etree_and_namespace(self, file):
+  def get_etree_and_namespace(self, xml_file):
+      """Designed to grab the namespace from the first element of the xml file. Unfortunately it has to start parsing and so it returns both namespace and etree."""
       events = ("start", "start-ns", "end")
       root = None
       namespaces = {}
-      context = lxml.etree.iterparse(file, events)
+      context = lxml.etree.iterparse(xml_file, events)
       context = iter(context)
       event, elem = context.next()
       if event == "start-ns":
@@ -741,7 +672,7 @@ class cParser(cArbiter):
 
 
   def ParseWiki(self):
-    """Parse text, links, categories from wikidump"""
+    """Parse text, links, categories from a wikidump."""
     
     # getting file size
     if self.arg_input != sys.stdin and self.arg_output != sys.stdout and self.arg_verbose:
@@ -934,8 +865,6 @@ class cParser(cArbiter):
         continue
 
     else:
-      if self.arg_input != sys.stdin and self.arg_output != sys.stdout:
-        sys.stdout.write("\nINFO: Parsing wikidump finished.\n")
       element.clear()
       while element.getprevious() is not None:
         del element.getparent()[0]

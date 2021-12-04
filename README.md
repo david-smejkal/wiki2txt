@@ -18,8 +18,8 @@ $ workon wiki2txt
 Usage: wiki2txt.py [options]
 
 Options:
-  --version                    show program's version number and exit
-  -h, --help                   show this help message and exit
+  --version                    Show program's version number and exit
+  -h, --help                   Show this help message and exit
   -i FILE, --input-file=FILE   Intput xml text will come from FILE otherwise from STDIN.
   -o FILE, --output-file=FILE  Output text will go to FILE otherwise to STDOUT.
   -n, --no-text                Don't parse text (designed for use with -r -l -c options).
