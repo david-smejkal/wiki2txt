@@ -213,7 +213,7 @@ class cParser(cArbiter):
     self.repaBlaRE = re.compile(r"[\s_]+")
     self.wikiCatRE = re.compile(r"(?i)\[\[(category:[^[]*?(?:!\[\[)*?)\]\]", re.DOTALL)
     self.repaCatRE = re.compile(r"(?i)(^:?category:[\s_]*)(.)(.*)")
-    self.wikiImgRE = re.compile(r"\[\[:?Image:.*?\]\]", re.DOTALL)
+    self.wikiImgRE = re.compile(r"\[\[:?(Image|File):.*?\]\]", re.DOTALL)
     #[[(http | https | ftp) :// ...] ...] or [(http | https | ftp) :// ...]
     self.wikiHttRE = re.compile(r"(?:(?:\[\[(?:(?:http[s]?)|(?:ftp))://.*?\].*?\])|(?:\[(?:(?:http[s]?)|(?:ftp))://.*?\]))", re.DOTALL)
     self.wikiBolRE = re.compile(r"'''.*?'''", re.DOTALL)
@@ -556,7 +556,8 @@ class cParser(cArbiter):
     self.repeat = 1
 
     ### REPLACING
-    # wiki image text, i.e. [[Image:...]]
+    # wiki images, i.e. [[Image:...]]
+    # wiki files, i.e. [[File:...]]
     # wiki references are sometimes nested in image comments,
     # e.g. [[abc|...[[defg|[[...]]...]]]]
     while self.repeat:
