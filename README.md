@@ -30,7 +30,7 @@ Options:
   -r FILE, --redirects=FILE    outsource redirect articles to the FILE
   -l FILE, --links=FILE        capture articles' links in the FILE
   -c FILE, --categories=FILE   capture articles' categories in the FILE
-  -T, --test                   parse input from STDIN. Use Ctrl + D to end input
+  -T, --test                   parse input from STDIN (use Ctrl + D to end input)
 ```
 
 # Output Format

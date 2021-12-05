@@ -90,7 +90,7 @@ class cArbiter:
                       help="capture articles' categories in the FILE")
     parser.add_option("-T", "--test", action="store_true",
                       dest="test", default=False,
-                      help="parse input from STDIN (se Ctrl + D to end input)")
+                      help="parse input from STDIN (use Ctrl + D to end input)")
     (options, args) = parser.parse_args()
 
     self.arg_text = options.text
