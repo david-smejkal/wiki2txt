@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python2
 # -*- coding: UTF-8 -*-
 
 # standard libraries
@@ -10,20 +10,17 @@ import optparse
 import locale
 
 # non-standard libraries
-import lxml.etree # pip install lxml # aptitude install python-lxml
-#from BeautifulSoup import BeautifulSoup
+import lxml.etree # pip install lxml
 
 # Marek Schmidt 2007, David Smejkal 2008.
   # Extraction of plain text from wikidumps (cca 10GB xml files).
   # Extraction of links/categories.
 
-# XML OUTPUT FORMAT (-x, --xml)
-
+# XML OUTPUT FORMAT
   #<article>
   #<id>ID</id>
   #<title>TITLE</title>
   #<text>PLAINTEXT</text>
-  #<categories>CATEGORIES</categories>
   #</article>
   #<article>
   #...
@@ -59,41 +56,41 @@ class cArbiter:
     """This function is self-explained."""
     parser = optparse.OptionParser(
               usage = "usage: %prog [options]",
-              version = "%prog 0.4.0")
+              version = "%prog 0.4.1")
 
     parser.add_option("-i", "--input-file",
                       dest="input", metavar="FILE",
-                      help="Intput xml text will come from FILE otherwise from STDIN.")
+                      help="take xml input from FILE otherwise from STDIN")
     parser.add_option("-o", "--output-file",
                       dest="output", metavar="FILE",
-                      help="Output text will go to FILE otherwise to STDOUT.")
+                      help="output parsed articles to FILE otherwise to STDOUT")
     parser.add_option("-n", "--no-text", action="store_false",
                       dest="text", default=False,
-                      help="Don't parse text (designed for use with -r -l -c options).")
+                      help="don't parse text (designed for use with -r -l -c options)")
     parser.add_option("-t", "--text", action="store_true",
                       dest="text", default=True,
-                      help="Parse text from input to output (DEFAULT).")
+                      help="produce plaintext (DEFAULT)")
     parser.add_option("-s", "--skip",
                       dest="skip", metavar="NUMBER",
-                      help="Skip NUMBER of articles and append to output files.")
+                      help="skip (resume after) NUMBER of articles (and append to files)")
     parser.add_option("-q", "--quiet", action="store_false",
                       dest="verbose", default=True,
-                      help="Don't make any noise.")
+                      help="stop making noise")
     parser.add_option("-R", "--references", action="store_true",
                       dest="references", default=False,
-                      help="Print references in text (links and categories).")
+                      help="retain references in text (links and categories)")
     parser.add_option("-r", "--redirects",
                       dest="redirects_file", metavar="FILE",
-                      help="Outsource redirect articles to the specified file.")
+                      help="outsource redirect articles to the FILE")
     parser.add_option("-l", "--links",
                       dest="links_file", metavar="FILE",
-                      help="Capture articles' links in the specified file).")
+                      help="capture articles' links in the FILE")
     parser.add_option("-c", "--categories",
                       dest="categories_file", metavar="FILE",
-                      help="Capture articles' categories in the specified file.")
+                      help="capture articles' categories in the FILE")
     parser.add_option("-T", "--test", action="store_true",
                       dest="test", default=False,
-                      help="Parse input from STDIN. Use Ctrl + D to end input.")
+                      help="parse input from STDIN (se Ctrl + D to end input)")
     (options, args) = parser.parse_args()
 
     self.arg_text = options.text
@@ -220,7 +217,7 @@ class cParser(cArbiter):
     self.wikiItaRE = re.compile(r"''.*?''", re.DOTALL)
     self.wikiIteRE = re.compile(r"\n[*#(?:;)(?:#)]+[\ ]*")
     self.wikiEolRE = re.compile(r"(?:\n){2,}")
-    self.wikiSpaRE = re.compile(r"(?:\ ){2,}")
+    self.wikiWhiRE = re.compile(r"(?:\s){2,}") # detects clusters of 2 or more white spaces
     self.wikiBraRE = re.compile(r"\(\)")
     self.wikiHeaRE = re.compile(r"[=]{2,4}.*?[=]{2,4}")
 
@@ -373,7 +370,7 @@ class cParser(cArbiter):
   def ParseSoup(self, matchObj):
     """Removes that stinky tag soup."""
     #print "ParseSoup"
-    ## test ci sa neparsuje nieco co neni tag soup
+    ## test whether we are parsing something that's not a tag soup
     #if len(matchObj.group(0)) > 100:
       #print matchObj.group(0)
     return ""
@@ -462,7 +459,7 @@ class cParser(cArbiter):
         return annotation
       retStr += "target=\"" + annotation + "\">" + annotation
     else:
-      if self.arg_links_file:
+      if self.arg_links_file or self.arg_references:
         link = self.RepairArticleName(annotation[:linkSeparator])
         self.wikiData.linkList.append(link)
       if not self.arg_references:
@@ -633,8 +630,8 @@ class cParser(cArbiter):
     text = self.wikiEolRE.sub('\n', text)
 
     ### REPLACING
-    # spaces formating
-    text = self.wikiSpaRE.sub(' ', text)
+    # whitespace formating (removes clusters of more than 2 whitespaces)
+    text = self.wikiWhiRE.sub(' ', text)
 
     ### REPLACING
     # remove empty brackets
@@ -717,19 +714,21 @@ class cParser(cArbiter):
     nsdict = {'ns' : ns}
     ns = '{%s}' % ns
 
-    # opening .lnk and .cat files
+    # prepare links file
     if self.arg_links_file:
       if self.arg_skip:
         self.arg_lnkFile = open(self.arg_links_file, "a")
       else:
         self.arg_lnkFile = open(self.arg_links_file, "w")
 
+    # prepare categories file
     if self.arg_categories_file:
       if self.arg_skip:
         self.arg_catFile = open(self.arg_categories_file, "a")
       else:
         self.arg_catFile = open(self.arg_categories_file, "w")
 
+    # prepare redirects file
     if self.arg_redirects_file:
       if self.arg_skip:
         self.arg_redFile = open(self.arg_redirects_file, "a")
@@ -827,7 +826,7 @@ class cParser(cArbiter):
             del element.getparent()[0]
 
       except KeyboardInterrupt:
-        sys.stderr.write("\nWARNING: Prematurely aborted parsing (not all articles parsed).\n")
+        sys.stderr.write("\nWARNING: Prematurely aborted parsing (not all articles have been processed).\n")
         if self.arg_input != sys.stdin and self.arg_output != sys.stdout:
           sys.stderr.write("WARNING: To resume parsing run the same command again with additional \"-s "+str(count)+"\" option.\n")
         element.clear()
@@ -842,7 +841,7 @@ class cParser(cArbiter):
         break
 
       except IOError:
-        sys.stderr.write("\nERROR: File too large, propably filesystem problem.\n")
+        sys.stderr.write("\nERROR: Input/Output filesystem related problem (File too large, No such file or directory, etc.).\n")
         if self.arg_input != sys.stdin and self.arg_output != sys.stdout:
           sys.stderr.write("WARNING: To resume parsing run the same command again with additional \"-s "+str(count)+"\" option.\n")
         element.clear()
@@ -901,7 +900,7 @@ if __name__ == "__main__":
     parser.ParseWiki()
   else:
     if parser.arg_verbose:
-      sys.stdout.write("\nINFO: Ran with options that didn't result in any output to be parsed. Try to run the script with different options.\n")
+      sys.stdout.write("\nINFO: Exectured with options that didn't result in any parsed output. Try to use some other option combination.\n")
 
   del parser
 
