@@ -79,4 +79,4 @@ v2.4.1
 
 ## Backwards compatibility infringements
 
-`v3+` will no longer support Python v2
+`v3+` will no longer support Python v2 and will require Python v3
