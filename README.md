@@ -67,3 +67,16 @@ $ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2
 ```shell-session
 (wiki2txt) $ python wiki2txt.py -t -i enwiki-latest-pages-articles.xml -o latest-food.xml -r redirects.edg
 ```
+
+# Versioning semantics
+```
+v2.4.1
+ ^ ^ ^
+ | | ∟-> Patch version (significant bug fixes / improvements / features)
+ | ∟---> Release version (good amount of new features and improvements)
+ ∟-----> Major version (aligned with supported major Python version)
+```
+
+## Backwards compatibility infringements
+
+`v3.0+` will no longer support Python v2
