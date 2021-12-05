@@ -74,9 +74,9 @@ v2.4.1
  ^ ^ ^
  | | ∟-> Patch version (significant bug fix / improvement / new feature)
  | ∟---> Minor version (good amount of new features and improvements)
- ∟-----> Major version (aligned with supported major Python version)
+ ∟-----> Major version (aligned with supported major version of Python)
 ```
 
 ## Backwards compatibility infringements
 
-`wiki2txt v3` - Will require Python v3
+`v3` - Will require `Python v3`

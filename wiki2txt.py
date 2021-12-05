@@ -56,7 +56,7 @@ class cArbiter:
     """This function is self-explained."""
     parser = optparse.OptionParser(
               usage = "usage: %prog [options]",
-              version = "%prog 0.4.1")
+              version = "%prog 2.4.1")
 
     parser.add_option("-i", "--input-file",
                       dest="input", metavar="FILE",
