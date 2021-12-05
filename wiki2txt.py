@@ -1,6 +1,10 @@
 #!/usr/bin/env python2
 # -*- coding: UTF-8 -*-
 
+# Authors:     Marek Schmidt 2007, David Smejkal 2008
+# Repository:  https://github.com/david-smejkal/wiki2txt
+# License:     GPLv2
+
 # standard libraries
 import sys
 import os
@@ -12,35 +16,28 @@ import locale
 # non-standard libraries
 import lxml.etree # pip install lxml
 
-# Marek Schmidt 2007, David Smejkal 2008.
-  # Extraction of plain text from wikidumps (cca 10GB xml files).
-  # Extraction of links/categories.
-
 # XML OUTPUT FORMAT
   #<article>
   #<id>ID</id>
   #<title>TITLE</title>
   #<text>PLAINTEXT</text>
   #</article>
-  #<article>
-  #...
-
-# extended:
-#   ru-sib,
-LANG_ARRAY = set(\
-['aa', 'ab', 'af', 'ak', 'aln', 'als', 'am', 'an', 'ang', 'ar', 'arc', 'arn', 'arz', 'as', 'ast', 'av', 'avk', 'ay', 'az', 'ba', 'bar', 'bat-smg', 'bcc', 'bcl', 'be', 'be-tarask', 'be-x-old', 'bg', 'bh', 'bi', 'bm', 'bn', 'bo', 'bpy', 'br', 'bs', 'bto', 'bug', 'bxr', 'ca', 'cbk-zam', 'cdo', 'ce', 'ceb', 'ch', 'cho', 'chr', 'chy', 'co', 'cr', 'crh', 'crh-latn', 'crh-cyrl', 'cs', 'csb', 'cu', 'cv', 'cy', 'da', 'de', 'de-formal', 'diq', 'dk', 'dsb', 'dv', 'dz', 'ee', 'el', 'eml', 'en', 'en-gb', 'eo', 'es', 'et', 'eu', 'ext', 'fa', 'ff', 'fi', 'fiu-vro', 'fj', 'fo', 'fr', 'frc', 'frp', 'fur', 'fy', 'ga', 'gag', 'gan', 'gd', 'gl', 'glk', 'gn', 'got', 'grc', 'gsw', 'gu', 'gv', 'ha', 'hak', 'haw', 'he', 'hi', 'hif', 'hif-deva', 'hif-latn', 'hil', 'ho', 'hr', 'hsb', 'ht', 'hu', 'hy', 'hz', 'ia', 'id', 'ie', 'ig', 'ii', 'ik', 'ike-cans', 'ike-latn', 'ilo', 'inh', 'io', 'is', 'it', 'iu', 'ja', 'jbo', 'jut', 'jv', 'ka', 'kaa', 'kab', 'kg', 'ki', 'kj', 'kk', 'kk-arab', 'kk-cyrl', 'kk-latn', 'kk-cn', 'kk-kz', 'kk-tr', 'kl', 'km', 'kn', 'ko', 'kr', 'kri', 'krj', 'ks', 'ksh', 'ku', 'ku-latn', 'ku-arab', 'kv', 'kw', 'ky', 'la', 'lad', 'lb', 'lbe', 'lez', 'lfn', 'lg', 'li', 'lij', 'lld', 'lmo', 'ln', 'lo', 'loz', 'lt', 'lv', 'lzz', 'mai', 'map-bms', 'mdf', 'mg', 'mh', 'mi', 'mk', 'ml', 'mn', 'mo', 'mr', 'ms', 'mt', 'mus', 'mwl', 'my', 'myv', 'mzn', 'na', 'nah', 'nan', 'nap', 'nb', 'nds', 'nds-nl', 'ne', 'new', 'ng', 'niu', 'nl', 'nn', 'no', 'nov', 'nrm', 'nso', 'nv', 'ny', 'oc', 'om', 'or', 'os', 'pa', 'pag', 'pam', 'pap', 'pdc', 'pdt', 'pfl', 'pi', 'pih', 'pl', 'plm', 'pms', 'pnt', 'ps', 'pt', 'pt-br', 'qu', 'rif', 'rm', 'rmy', 'rn', 'ro', 'roa-rup', 'roa-tara', 'ru', 'ru-sib', 'ruq', 'ruq-cyrl', 'ruq-grek', 'ruq-latn', 'rw', 'sa', 'sah', 'sc', 'scn', 'sco', 'sd', 'sdc', 'se', 'sei', 'sg', 'sh', 'shi', 'si', 'simple', 'sk', 'sl', 'sm', 'sma', 'sn', 'so', 'sq', 'sr', 'sr-ec', 'sr-el', 'srn', 'ss', 'st', 'stq', 'su', 'sv', 'sw', 'szl', 'ta', 'te', 'tet', 'tg', 'tg-cyrl', 'tg-latn', 'th', 'ti', 'tk', 'tl', 'tlh', 'tn', 'to', 'tokipona', 'tp', 'tpi', 'tr', 'ts', 'tt', 'tt-cyrl', 'tt-latn', 'tum', 'tw', 'ty', 'tyv', 'tzm', 'udm', 'ug', 'uk', 'ur', 'uz', 've', 'vec', 'vi', 'vls', 'vo', 'wa', 'war', 'wo', 'wuu', 'xal', 'xh', 'xmf', 'ydd', 'yi', 'yo', 'yue', 'za', 'zea', 'zh', 'zh-classical', 'zh-cn', 'zh-hans', 'zh-hant', 'zh-hk', 'zh-min-nan', 'zh-mo', 'zh-my', 'zh-sg', 'zh-tw', 'zh-yue', 'zu', 'simple'])
 
 
+
+################################################################################
 #--------------------------------<CLASSES>-------------------------------------#
+################################################################################
 
 #List of classes used in this script:
-  #class cArbiter
-  #class cParser(cArbiter)
+  # class cWikiData          - Holds parsed data
+  # class cOperator          - Performs script related operations (option parsing, printing progress, etc.)
+  # class cParser(cOperator) - Performs parsing related operations (core of wiki2txt)
 
 
 
-class WikiData:
-  """Object containing plaintext links and categories."""
+class cWikiData:
+  """Data structure designed to hold parsed data."""
   def __init__(self):
       self.plainText = None
       self.redirect = None
@@ -49,8 +46,8 @@ class WikiData:
 
 
 
-class cArbiter:
-  """Helper / handler of this script. Handles parsing of parameter, printing of progress bar, etc."""
+class cOperator:
+  """Helper / handler of this script. Performs script related operations (option parsing, printing progress, etc.)."""
 
   def GetParams(self):
     """This function is self-explained."""
@@ -90,7 +87,7 @@ class cArbiter:
                       help="capture articles' categories in the FILE")
     parser.add_option("-T", "--test", action="store_true",
                       dest="test", default=False,
-                      help="parse input from STDIN (use Ctrl + D to end input)")
+                      help="parse input from STDIN (use CTRL-D to signify end of input)")
     (options, args) = parser.parse_args()
 
     self.arg_text = options.text
@@ -178,12 +175,12 @@ class cArbiter:
 
 
 
-class cParser(cArbiter):
-  """Most important class... it does the actual parsing."""
+class cParser(cOperator):
+  """Core class. Performs parsing related operations."""
 
   def __init__(self):
     self.repeat = 1 # flag needed for nested elements
-    self.wikiData = WikiData()
+    self.wikiData = cWikiData()
     # REGULAR EXPRESSIONS PATTERNS FOR PARSING
     self.wikiRedRE = re.compile(r"(?i)#redirect\s*\[\[(.*?)\]\].*", re.DOTALL)
     self.wikiLanRE = re.compile(r"(.*\[\[Category:.*?\]\]).*", re.DOTALL)
@@ -418,8 +415,6 @@ class cParser(cArbiter):
 
   #def RepairReference(self, matchObj):
     #"""Repairs bad categories (i.e. \"category:xxx\", \"Category: xxx\")."""
-
-
     #return "Category:" + matchObj.group(2).capitalize()
 
 
@@ -431,6 +426,27 @@ class cParser(cArbiter):
 
     if annotation[:7] == "http://":
       return ""
+
+    # extended:
+    #   ru-sib,
+    LANG_ARRAY = set(['aa', 'ab', 'af', 'ak', 'aln', 'als', 'am', 'an', 'ang', 'ar', 'arc', 'arn', 'arz', 'as', 'ast', 'av', 'avk', 'ay', 'az', 'ba', 'bar', 
+                      'bat-smg', 'bcc', 'bcl', 'be', 'be-tarask', 'be-x-old', 'bg', 'bh', 'bi', 'bm', 'bn', 'bo', 'bpy', 'br', 'bs', 'bto', 'bug', 'bxr', 'ca', 
+                      'cbk-zam', 'cdo', 'ce', 'ceb', 'ch', 'cho', 'chr', 'chy', 'co', 'cr', 'crh', 'crh-latn', 'crh-cyrl', 'cs', 'csb', 'cu', 'cv', 'cy', 'da', 
+                      'de', 'de-formal', 'diq', 'dk', 'dsb', 'dv', 'dz', 'ee', 'el', 'eml', 'en', 'en-gb', 'eo', 'es', 'et', 'eu', 'ext', 'fa', 'ff', 'fi', 
+                      'fiu-vro', 'fj', 'fo', 'fr', 'frc', 'frp', 'fur', 'fy', 'ga', 'gag', 'gan', 'gd', 'gl', 'glk', 'gn', 'got', 'grc', 'gsw', 'gu', 'gv', 'ha', 
+                      'hak', 'haw', 'he', 'hi', 'hif', 'hif-deva', 'hif-latn', 'hil', 'ho', 'hr', 'hsb', 'ht', 'hu', 'hy', 'hz', 'ia', 'id', 'ie', 'ig', 'ii', 
+                      'ik', 'ike-cans', 'ike-latn', 'ilo', 'inh', 'io', 'is', 'it', 'iu', 'ja', 'jbo', 'jut', 'jv', 'ka', 'kaa', 'kab', 'kg', 'ki', 'kj', 'kk', 
+                      'kk-arab', 'kk-cyrl', 'kk-latn', 'kk-cn', 'kk-kz', 'kk-tr', 'kl', 'km', 'kn', 'ko', 'kr', 'kri', 'krj', 'ks', 'ksh', 'ku', 'ku-latn', 
+                      'ku-arab', 'kv', 'kw', 'ky', 'la', 'lad', 'lb', 'lbe', 'lez', 'lfn', 'lg', 'li', 'lij', 'lld', 'lmo', 'ln', 'lo', 'loz', 'lt', 'lv', 'lzz',
+                      'mai', 'map-bms', 'mdf', 'mg', 'mh', 'mi', 'mk', 'ml', 'mn', 'mo', 'mr', 'ms', 'mt', 'mus', 'mwl', 'my', 'myv', 'mzn', 'na', 'nah', 'nan',
+                      'nap', 'nb', 'nds', 'nds-nl', 'ne', 'new', 'ng', 'niu', 'nl', 'nn', 'no', 'nov', 'nrm', 'nso', 'nv', 'ny', 'oc', 'om', 'or', 'os', 'pa',
+                      'pag', 'pam', 'pap', 'pdc', 'pdt', 'pfl', 'pi', 'pih', 'pl', 'plm', 'pms', 'pnt', 'ps', 'pt', 'pt-br', 'qu', 'rif', 'rm', 'rmy', 'rn', 'ro',
+                      'roa-rup', 'roa-tara', 'ru', 'ru-sib', 'ruq', 'ruq-cyrl', 'ruq-grek', 'ruq-latn', 'rw', 'sa', 'sah', 'sc', 'scn', 'sco', 'sd', 'sdc', 'se',
+                      'sei', 'sg', 'sh', 'shi', 'si', 'simple', 'sk', 'sl', 'sm', 'sma', 'sn', 'so', 'sq', 'sr', 'sr-ec', 'sr-el', 'srn', 'ss', 'st', 'stq', 'su',
+                      'sv', 'sw', 'szl', 'ta', 'te', 'tet', 'tg', 'tg-cyrl', 'tg-latn', 'th', 'ti', 'tk', 'tl', 'tlh', 'tn', 'to', 'tokipona', 'tp', 'tpi', 'tr',
+                      'ts', 'tt', 'tt-cyrl', 'tt-latn', 'tum', 'tw', 'ty', 'tyv', 'tzm', 'udm', 'ug', 'uk', 'ur', 'uz', 've', 'vec', 'vi', 'vls', 'vo', 'wa',
+                      'war', 'wo', 'wuu', 'xal', 'xh', 'xmf', 'ydd', 'yi', 'yo', 'yue', 'za', 'zea', 'zh', 'zh-classical', 'zh-cn', 'zh-hans', 'zh-hant', 'zh-hk',
+                      'zh-min-nan', 'zh-mo', 'zh-my', 'zh-sg', 'zh-tw', 'zh-yue', 'zu', 'simple'])
 
     #if annotation[:2] == "s:":
       #retStr += "source=\"wikisource\" "
@@ -449,7 +465,6 @@ class cParser(cArbiter):
       return ""
 
     linkSeparator = annotation.find('|')
-
 
     if linkSeparator == -1: # self reference (e.g. [[aaa]])
       if self.arg_links_file:
@@ -513,7 +528,7 @@ class cParser(cArbiter):
   def GetPlainTextLinksCategoriesFromWikiDump(self, text):
     """Returns plain text from xml text tag content."""
 
-    wikiData = WikiData()
+    wikiData = cWikiData()
 
     # redirected pages (articles), i.e. #REDIRECT
     # redirection is handeled befor this method ... in xml parsing
@@ -647,7 +662,10 @@ class cParser(cArbiter):
 
 
   def get_etree_and_namespace(self, xml_file):
-      """Designed to grab the namespace from the first element of the xml file. Unfortunately it has to start parsing and so it returns both namespace and etree."""
+      """Designed to grab the namespace from the first element of the xml file.
+         Unfortunately to do so it has to start parsing and so it returns both namespace and etree.
+         TODO: Find a way to restart lxml parsing and make this function solely about just retrieving namespaces
+      """
       events = ("start", "start-ns", "end")
       root = None
       namespaces = {}
@@ -875,33 +893,42 @@ class cParser(cArbiter):
       if self.arg_redirects_file:
         self.arg_redFile.close()
 
-#-------------------------------</CLASSES>-------------------------------------#
 
+################################################################################
+#--------------------------------</CLASSES>------------------------------------#
+################################################################################
+
+
+
+################################################################################
+#--------------------------------<MAIN>----------------------------------------#
+################################################################################
 
 if __name__ == "__main__":
 
-  # create parser object
-  parser = cParser()
-
-  # evaluate startup parameters
-  parser.GetParams()
+  parser = cParser() # create parser object
+  parser.GetParams() # evaluate startup parameters
 
   # testing? (input from stdin)
   if parser.arg_test:
-    print "INPUT:"
-    inputStr = parser.arg_input.read() # use Ctrl + D to signify end of input
+    print "INPUT (use CTRL-D in Unix or CTRL-Z in Windows to start parsing):\n"
+    inputStr = parser.arg_input.read() # send EOF to signify end of input
     print "\nOUTPUT:"
     parser.GetPlainTextLinksCategoriesFromWikiDump(inputStr)
     print parser.wikiData.plainText
     sys.exit(0)
 
-  # do the actual parsing as long as some output is expected to be produced
+  # do the actual parsing
   if parser.arg_text or parser.arg_links_file or parser.arg_categories_file or parser.arg_redirects_file:
     parser.ParseWiki()
-  else:
+  else: # Options misued? / No output expected to be produced to be produced?
     if parser.arg_verbose:
-      sys.stdout.write("\nINFO: Exectured with options that didn't result in any parsed output. Try to use some other option combination.\n")
+      sys.stdout.write("\nINFO: Executed with options that didn't result in any parsed output. Try to use some other option combination.\n")
 
-  del parser
+  del parser # clean up
+
+################################################################################
+#--------------------------------</MAIN>---------------------------------------#
+################################################################################
 
 # END OF SCRIPT

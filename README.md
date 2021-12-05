@@ -30,7 +30,7 @@ Options:
   -r FILE, --redirects=FILE    outsource redirect articles to the FILE
   -l FILE, --links=FILE        capture articles' links in the FILE
   -c FILE, --categories=FILE   capture articles' categories in the FILE
-  -T, --test                   parse input from STDIN (use Ctrl + D to end input)
+  -T, --test                   parse input from STDIN (use CTRL-D to signify end of input)
 ```
 
 # Output Format
@@ -73,7 +73,7 @@ $ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2
 v2.4.1
  ^ ^ ^
  | | ∟-> Patch version (significant bug fix / improvement / new feature)
- | ∟---> Minor version (good amount of new features and improvements)
+ | ∟---> Minor version (good amount of new features / improvements)
  ∟-----> Major version (aligned with supported major version of Python)
 ```
 
