@@ -2,7 +2,7 @@
 A tool to extract plaintext, links and categories from `wikidumps` (https://dumps.wikimedia.org/enwiki/).<br />
 Designed to prepare "digestible food" (cleaner data) for AI learning software.<br />
 
-Written in Python, utilizes `lxml` SAX parser (easy on memory usage) and leans heavily on the powers of the `re` (regex) library to extract clean plaintext.
+Written in Python, utilizes `lxml` SAX (easy on memory) parser and leans heavily on the powers of the `re` library.<br />
 ![wiki2txt demo](https://smejkal.software/img/wiki2txt-demo.gif)
 
 # Installation
@@ -48,9 +48,9 @@ Options:
 
 ## Download > Decompress > Parse
 ```console
-(wiki2txt) $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles1.xml-p1p41242.bz2 articles1.xml # 234 MB
+(wiki2txt) $ wget -O articles1.xml https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles1.xml-p1p41242.bz2 # 234 MB
 (wiki2txt) $ bzip2 --decompress articles1.xml # 893 MB
-(wiki2txt) $ python wiki2txt.py -i articles1.xml -o parsed.xml -r redirects.edg # Parsed: 
+(wiki2txt) $ python wiki2txt.py -i articles1.xml -o parsed.xml -r redirects.edg # 401 MB
 ```
 
 ## Download latest
