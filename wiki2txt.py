@@ -24,7 +24,6 @@ import lxml.etree # pip install lxml
   #</article>
 
 
-
 ################################################################################
 #--------------------------------<CLASSES>-------------------------------------#
 ################################################################################
@@ -35,7 +34,6 @@ import lxml.etree # pip install lxml
   # class cParser(cOperator) - Performs parsing related operations (core of wiki2txt)
 
 
-
 class cWikiData:
   """Data structure designed to hold parsed data."""
   def __init__(self):
@@ -43,7 +41,6 @@ class cWikiData:
       self.redirect = None
       self.linkList = []
       self.categoryList = []
-
 
 
 class cOperator:
@@ -172,7 +169,6 @@ class cOperator:
       return progressPer, len(progressStr)
 
     return progressPer, oldReturn[1]
-
 
 
 class cParser(cOperator):
@@ -899,7 +895,6 @@ class cParser(cOperator):
 ################################################################################
 
 
-
 ################################################################################
 #--------------------------------<MAIN>----------------------------------------#
 ################################################################################
@@ -911,11 +906,11 @@ if __name__ == "__main__":
 
   # testing? (input from stdin)
   if parser.arg_test:
-    print "INPUT (use CTRL-D in Unix or CTRL-Z in Windows to start parsing):\n"
+    print("INPUT (use CTRL-D in Unix or CTRL-Z in Windows to start parsing):\n")
     inputStr = parser.arg_input.read() # send EOF to signify end of input
-    print "\nOUTPUT:"
+    print("\nOUTPUT:")
     parser.GetPlainTextLinksCategoriesFromWikiDump(inputStr)
-    print parser.wikiData.plainText
+    print(parser.wikiData.plainText)
     sys.exit(0)
 
   # do the actual parsing
