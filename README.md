@@ -79,4 +79,4 @@ v2.4.1
 
 ## Backwards compatibility infringements
 
-`v3+` will no longer support Python v2 and will require Python v3
+`wiki2txt v3` - Will require Python v3
