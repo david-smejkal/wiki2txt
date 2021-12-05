@@ -829,7 +829,7 @@ class cParser(cArbiter):
       except KeyboardInterrupt:
         sys.stderr.write("\nWARNING: Prematurely aborted parsing (not all articles parsed).\n")
         if self.arg_input != sys.stdin and self.arg_output != sys.stdout:
-          sys.stderr.write("WARNING: If you wish to resume parsing from where this error occured you can run wiki2txt again with \"-s "+str(count)+"\" parameter.\n")
+          sys.stderr.write("WARNING: To resume parsing run the same command again with additional \"-s "+str(count)+"\" option.\n")
         element.clear()
         while element.getprevious() is not None:
           del element.getparent()[0]
@@ -844,7 +844,7 @@ class cParser(cArbiter):
       except IOError:
         sys.stderr.write("\nERROR: File too large, propably filesystem problem.\n")
         if self.arg_input != sys.stdin and self.arg_output != sys.stdout:
-          sys.stderr.write("WARNING: If you wish to resume parsing from where this error occured you can run wiki2txt again with \"-S "+str(count)+"\" parameter.\n")
+          sys.stderr.write("WARNING: To resume parsing run the same command again with additional \"-s "+str(count)+"\" option.\n")
         element.clear()
         while element.getprevious() is not None:
           del element.getparent()[0]
