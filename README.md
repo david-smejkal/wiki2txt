@@ -6,9 +6,10 @@ Written in Python, utilizes `lxml` SAX (easy on memory) parser and leans heavily
 ![wiki2txt demo](https://smejkal.software/img/wiki2txt-demo.gif)
 
 # Installation
-Optional: Use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment
+*Supported Python versions: `2.7+` or `3.4+`*
+*Optional: Use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment*
 ```csharp
-$ mkproject --python="`which python2`" wiki2txt
+$ mkproject wiki2txt
 (wiki2txt) $ pip install -r requirements.txt
 ```
 
@@ -30,7 +31,7 @@ Options:
   -r FILE, --redirects=FILE    outsource redirect articles to the FILE
   -l FILE, --links=FILE        capture articles' links in the FILE
   -c FILE, --categories=FILE   capture articles' categories in the FILE
-  -T, --test                   parse input from STDIN (use CTRL-D to signify end of input)
+  -T, --test                   test by parsing directly from STDIN (bypasses lxml parser)
 ```
 
 # Output Format
@@ -41,6 +42,12 @@ Options:
   <text>PLAINTEXT</text>
 </article>
 ```
+
+# Performance
+> Intel i7 1.8 GHz (one core)
+`Python v3.9` - Wikidump data parsing speed of `5.9 MB/s`
+`Python v2.7` - Wikidump data parsing speed of `4.1 MB/s`
+*NOTE: Parsing with Python `v3` is 44% faster than with `v2`*
 
 # Examples
 
@@ -70,13 +77,9 @@ $ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2
 
 # Versioning semantics
 ```
-v2.4.1
+v0.4.1
  ^ ^ ^
- | | ∟-> Patch version (significant bug fix / improvement / new feature)
+ | | ∟-> Patch version (bug fix / improvement / new feature)
  | ∟---> Minor version (good amount of new features / improvements)
- ∟-----> Major version (aligned with supported major version of Python)
+ ∟-----> Major version (backwards incompatible changes)
 ```
-
-## Backwards compatibility infringements
-
-`v3` - Will require `Python v3`

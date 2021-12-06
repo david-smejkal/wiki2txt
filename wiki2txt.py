@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
 # Authors:     Marek Schmidt 2007, David Smejkal 2008
@@ -12,16 +12,31 @@ import re
 import string
 import optparse
 import locale
+from io import open # for python 2-3 compatibility
+import unicodedata # for python 2-3 compatibility
+  # unicodedata is currently used to normalize unicode and thus minimize differences between python v2 and python v3 output)
+  # before normalization the differences were that v2 would not clean up some unicode specific whitespaces
+  # after normalization the differences are miniscule and purely cosmetic 
 
 # non-standard libraries
 import lxml.etree # pip install lxml
 
 # XML OUTPUT FORMAT
   #<article>
-  #<id>ID</id>
-  #<title>TITLE</title>
-  #<text>PLAINTEXT</text>
+    #<id>ID</id>
+    #<title>TITLE</title>
+    #<text>PLAINTEXT</text>
   #</article>
+
+DEFAULT_ENCODING = 'utf-8'
+
+# TODO list:
+  # TODO: Break up classes into individual files
+  # TODO: Cover as much code as possible with unit tests
+  # TODO: Profile code
+  # TODO: Optimize code where appropriate to speed up parsing
+  # TODO: Review the necessity for unicodedata normalization (it seems unnecessary to normalize unicodes in v3)
+  # TODO: Think about allowing one-shot parsing (to wrap STDIN input in mediawiki like structure)
 
 
 ################################################################################
@@ -50,7 +65,7 @@ class cOperator:
     """This function is self-explained."""
     parser = optparse.OptionParser(
               usage = "usage: %prog [options]",
-              version = "%prog 2.4.1")
+              version = "%prog 0.5.0")
 
     parser.add_option("-i", "--input-file",
                       dest="input", metavar="FILE",
@@ -84,7 +99,7 @@ class cOperator:
                       help="capture articles' categories in the FILE")
     parser.add_option("-T", "--test", action="store_true",
                       dest="test", default=False,
-                      help="parse input from STDIN (use CTRL-D to signify end of input)")
+                      help="test by parsing directly from STDIN (bypasses lxml parser)")
     (options, args) = parser.parse_args()
 
     self.arg_text = options.text
@@ -105,7 +120,7 @@ class cOperator:
 
     if options.input != None:
       self.arg_input_name = options.input
-      self.arg_input = open(options.input, "r")
+      self.arg_input = open(options.input, "rb")
     else:
       self.arg_skip = False
       self.arg_input_name = "stdin"
@@ -115,9 +130,9 @@ class cOperator:
       if self.arg_text:
         self.arg_output_name = options.output
         if self.arg_skip:
-          self.arg_output = open(options.output, "a+")
+          self.arg_output = open(options.output, "a+b")
         else:
-          self.arg_output = open(options.output, "w")
+          self.arg_output = open(options.output, "wb")
       else:
         self.arg_output_name = None
         self.arg_output = None
@@ -156,8 +171,8 @@ class cOperator:
     if oldReturn[0] != progressPer:
 
       progressStr = "%s MB  of  %s MB" % \
-        (locale.format("%0.2f", (float(size) / 1000000), True), \
-        locale.format("%d", (fileSize / 1000000), True))
+        (locale.format_string("%0.2f", (float(size) / 1000000), True), \
+        locale.format_string("%d", (fileSize / 1000000), True))
       progressStr += " (" + progressPer + " %)"
 
       #print "x"
@@ -210,7 +225,7 @@ class cParser(cOperator):
     self.wikiItaRE = re.compile(r"''.*?''", re.DOTALL)
     self.wikiIteRE = re.compile(r"\n[*#(?:;)(?:#)]+[\ ]*")
     self.wikiEolRE = re.compile(r"(?:\n){2,}")
-    self.wikiWhiRE = re.compile(r"(?:\s){2,}") # detects clusters of 2 or more white spaces
+    self.wikiWhiRE = re.compile(r"(?:\s){2,}", flags=re.M) # detects clusters of 2 or more white spaces
     self.wikiBraRE = re.compile(r"\(\)")
     self.wikiHeaRE = re.compile(r"[=]{2,4}.*?[=]{2,4}")
 
@@ -313,7 +328,6 @@ class cParser(cOperator):
       #print "unknown|"
       # {{...|...}}
       return matchObj.group(0)[:deepestIndex]
-
 
 
   def ParseBlockQuote(self, matchObj):
@@ -638,7 +652,7 @@ class cParser(cOperator):
 
     ### REPLACING
     # EOL formating
-    text = self.wikiEolRE.sub('\n', text)
+    #text = self.wikiEolRE.sub('\n', text)
 
     ### REPLACING
     # whitespace formating (removes clusters of more than 2 whitespaces)
@@ -667,7 +681,7 @@ class cParser(cOperator):
       namespaces = {}
       context = lxml.etree.iterparse(xml_file, events)
       context = iter(context)
-      event, elem = context.next()
+      event, elem = next(context)
       if event == "start-ns":
           if elem[0] in namespaces and namespaces[elem[0]] != elem[1]:
               # NOTE: It is perfectly valid to have the same prefix refer
@@ -683,6 +697,26 @@ class cParser(cOperator):
       return context, namespaces[''] if '' in namespaces else namespaces
 
 
+  def ParseTest(self):
+    """Temporary method that will be replaced by unit tests in near future."""
+
+    print("INPUT (use CTRL-D in Unix or CTRL-Z in Windows to start parsing):\n")
+    input_data = parser.arg_input.read() # send EOF to signify end of input
+    if sys.version_info < (3, 0):
+        input_data = bytes(input_data)
+    else:
+        input_data = bytes(input_data, 'utf8')
+    input_data = unicodedata.normalize("NFKD", input_data.decode(DEFAULT_ENCODING))
+    #print("\nINPUT (normalized):")
+    #print(repr(input_data))
+    parser.GetPlainTextLinksCategoriesFromWikiDump(input_data)
+    #print("\nOUTPUT (representation):")
+    #print(repr(parser.wikiData.plainText))
+    print("\nOUTPUT:")
+    print(parser.wikiData.plainText)
+    print("")
+
+
   def ParseWiki(self):
     """Parse text, links, categories from a wikidump."""
     
@@ -695,7 +729,7 @@ class cParser(cOperator):
       context, ns = self.get_etree_and_namespace(self.arg_input)
       #context = lxml.etree.iterparse(self.arg_input, events = ("start", "end"))
       #context = iter(context)
-      event, root = context.next()
+      event, root = next(context)
     except:
       raise
       sys.stderr.write("\nERROR: Bad input file (not a wikidump), try \"-T\" for testing purposes.\n")
@@ -709,7 +743,7 @@ class cParser(cOperator):
     if self.arg_skip:
       try:
         for i in range(count):
-          event, element = context.next()
+          event, element = next(context)
           # percentage
           if self.arg_input != sys.stdin and self.arg_output != sys.stdout and self.arg_verbose:
             currentFileSize = self.arg_input.tell()
@@ -731,23 +765,23 @@ class cParser(cOperator):
     # prepare links file
     if self.arg_links_file:
       if self.arg_skip:
-        self.arg_lnkFile = open(self.arg_links_file, "a")
+        self.arg_lnkFile = open(self.arg_links_file, "ab")
       else:
-        self.arg_lnkFile = open(self.arg_links_file, "w")
+        self.arg_lnkFile = open(self.arg_links_file, "wb")
 
     # prepare categories file
     if self.arg_categories_file:
       if self.arg_skip:
-        self.arg_catFile = open(self.arg_categories_file, "a")
+        self.arg_catFile = open(self.arg_categories_file, "ab")
       else:
-        self.arg_catFile = open(self.arg_categories_file, "w")
+        self.arg_catFile = open(self.arg_categories_file, "wb")
 
     # prepare redirects file
     if self.arg_redirects_file:
       if self.arg_skip:
-        self.arg_redFile = open(self.arg_redirects_file, "a")
+        self.arg_redFile = open(self.arg_redirects_file, "ab")
       else:
-        self.arg_redFile = open(self.arg_redirects_file, "w")
+        self.arg_redFile = open(self.arg_redirects_file, "wb")
 
     for event, element in context:
 
@@ -776,7 +810,8 @@ class cParser(cOperator):
           title = titles[0]
           id = ids[0]
 
-          wiki = "".join(texts)
+          wiki = unicodedata.normalize("NFKD", u"".join(texts))
+          #wiki = u"".join(texts)
 
           ##if ref flag was not found
           ##ignore redirected pages (articles), i.e. #REDIRECT or #redirect
@@ -806,11 +841,11 @@ class cParser(cOperator):
 
           # write to *.edg files
           if linkText is not None:
-            self.arg_lnkFile.write(linkText.encode("utf-8"))
+            self.arg_lnkFile.write(linkText.encode(DEFAULT_ENCODING))
           if categoryText is not None:
-            self.arg_catFile.write(categoryText.encode("utf-8"))
+            self.arg_catFile.write(categoryText.encode(DEFAULT_ENCODING))
           if redirectText is not None:
-            self.arg_redFile.write(redirectText.encode("utf-8"))
+            self.arg_redFile.write(redirectText.encode(DEFAULT_ENCODING))
 
 
           # write text
@@ -832,7 +867,7 @@ class cParser(cOperator):
                   categoriesText += "<category target=\"" + i + "\"/>"
                 categoriesEl.text = categoriesText
 
-              lxml.etree.ElementTree(pageEl).write(self.arg_output, encoding='utf-8')
+              lxml.etree.ElementTree(pageEl).write(self.arg_output, encoding=DEFAULT_ENCODING)
 
           # free every page element (otherwise the RAM would overflow eventually)
           element.clear()
@@ -904,14 +939,11 @@ if __name__ == "__main__":
   parser = cParser() # create parser object
   parser.GetParams() # evaluate startup parameters
 
-  # testing? (input from stdin)
-  if parser.arg_test:
-    print("INPUT (use CTRL-D in Unix or CTRL-Z in Windows to start parsing):\n")
-    inputStr = parser.arg_input.read() # send EOF to signify end of input
-    print("\nOUTPUT:")
-    parser.GetPlainTextLinksCategoriesFromWikiDump(inputStr)
-    print(parser.wikiData.plainText)
-    sys.exit(0)
+  # TODO: Replace with proper lxml parsing from input
+  # temporary way to extract plaintext from short wiki-like content (currently aimed to allow some direct testing)
+  if parser.arg_test: # testing? (input from stdin)
+    parser.ParseTest()
+    sys.exit(0) # don't attempt to continue parsing with lxml during STDIN tests
 
   # do the actual parsing
   if parser.arg_text or parser.arg_links_file or parser.arg_categories_file or parser.arg_redirects_file:
