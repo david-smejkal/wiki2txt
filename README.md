@@ -6,7 +6,7 @@ Written in Python, utilizes `lxml` SAX (easy on memory) parser and leans heavily
 ![wiki2txt demo](https://smejkal.software/img/wiki2txt-demo.gif)
 
 # Installation
-*Supported Python versions: `2.7+`, `3.4+`*<br />
+Supported Python versions: `2.7+`, `3.4+`<br />
 *Optional: Use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment*
 ```csharp
 $ mkproject wiki2txt
@@ -44,35 +44,35 @@ Options:
 ```
 
 # Performance
-> Intel i7 1.8 GHz (one core)
-`Python v3.9` - Wikidump data parsing speed of `5.9 MB/s`
-`Python v2.7` - Wikidump data parsing speed of `4.1 MB/s`
+> Intel i7 1.8 GHz (one core)<br />
+`Python v3.9` - Wikidump data parsing speed of `5.9 MB/s`<br />
+`Python v2.7` - Wikidump data parsing speed of `4.1 MB/s`<br />
 *NOTE: Parsing with Python `v3` is 44% faster than with `v2`*
 
 # Examples
 
-## Download > Decompress > Parse
+## Download -> Decompress -> Parse
 ```console
 (wiki2txt) $ wget -O articles1.xml https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles1.xml-p1p41242.bz2 # 234 MB
 (wiki2txt) $ bzip2 --decompress articles1.xml.bz2 # 893 MB
 (wiki2txt) $ python wiki2txt.py -i articles1.xml -o parsed.xml -r redirects.edg # 400 MB
 ```
 
-## Download latest
+## Download latest complete wikidump
 **HINT:** add `--continue` parameter if you need to resume the download
 ```csharp
 $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2
 ```
 
-## Decompress latest
+## Decompress
 **HINT:** add `-k` parameter if you want to preserve the original archive
 ```console
 $ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2
 ```
 
-## Parse latest
+## Parse
 ```shell-session
-(wiki2txt) $ python wiki2txt.py -t -i enwiki-latest-pages-articles.xml -o latest-food.xml -r redirects.edg
+(wiki2txt) $ python wiki2txt.py -t -i enwiki-latest-pages-articles.xml -o latest-food.xml
 ```
 
 # Versioning semantics
