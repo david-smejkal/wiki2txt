@@ -6,7 +6,7 @@ Written in Python, utilizes `lxml` SAX (easy on memory) parser and leans heavily
 ![wiki2txt demo](https://smejkal.software/img/wiki2txt-demo.gif)
 
 # Installation
-*Supported Python versions: `2.7+` or `3.4+`*
+*Supported Python versions: `2.7+`, `3.4+`*<br />
 *Optional: Use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment*
 ```csharp
 $ mkproject wiki2txt
