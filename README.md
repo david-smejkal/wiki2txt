@@ -44,7 +44,7 @@ Options:
 ```
 
 # Performance
-> Intel i7 1.8 GHz (one core)
+> Meassured while running on one core of Intel i7 1.8 GHz processor
 
 `Python v3.9` - Wikidump data parsing speed of `5.9 MB/s`<br />
 `Python v2.7` - Wikidump data parsing speed of `4.1 MB/s`<br />
