@@ -7,11 +7,11 @@ Written in Python, utilizes `lxml` SAX (easy on memory) parser and leans heavily
 
 # Installation
 Supported Python versions: `2.7+`, `3.4+`<br />
-*Optional: Use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment*
 ```csharp
 $ mkproject wiki2txt
 (wiki2txt) $ pip install -r requirements.txt
 ```
+*Optional: Install and configure [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to use `mkproject` to create your virtual environment.*
 
 # Usage
 ```csharp
@@ -44,14 +44,15 @@ Options:
 ```
 
 # Performance
-> Intel i7 1.8 GHz (one core)<br />
+> Intel i7 1.8 GHz (one core)
+
 `Python v3.9` - Wikidump data parsing speed of `5.9 MB/s`<br />
 `Python v2.7` - Wikidump data parsing speed of `4.1 MB/s`<br />
-*NOTE: Parsing with Python `v3` is 44% faster than with `v2`*
+*NOTE: Parsing with Python `v3` is 44% faster than with `v2`.*
 
 # Examples
 
-## Download -> Decompress -> Parse
+## Download => Decompress => Parse
 ```console
 (wiki2txt) $ wget -O articles1.xml https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles1.xml-p1p41242.bz2 # 234 MB
 (wiki2txt) $ bzip2 --decompress articles1.xml.bz2 # 893 MB
