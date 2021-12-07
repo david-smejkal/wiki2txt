@@ -33,7 +33,6 @@ DEFAULT_ENCODING = 'utf-8'
 # TODO list:
   # TODO: Break up classes into individual files
   # TODO: Cover as much code as possible with unit tests
-  # TODO: Profile code
   # TODO: Optimize code where appropriate to speed up parsing
   # TODO: Review the necessity for unicodedata normalization (it seems unnecessary to normalize unicodes in v3)
   # TODO: Think about allowing one-shot parsing (to wrap STDIN input in mediawiki like structure)
@@ -555,19 +554,19 @@ class cParser(cOperator):
     ### DELETING
     ## GOOD TO PARSE AS FIRST (commented tags can make a mess)
     # comments, i.e. &lt;!-- ... --&gt;
-    text = self.wikiComRE.sub("", text)
+    text = self.wikiComRE.sub("", text) # <-- TODO: Heavy processing, optimize
 
     ### DELETING
     # br tags, i.e. &lt;br&gt;
     # &lt; or '<' are the same but it depends on how you get the input
     # both will be used for safety reasons
-    text = self.wikiBrtRE.sub("", text)
+    text = self.wikiBrtRE.sub("", text) # <-- TODO: Heavy processing, optimize
 
     ### DELETING / REPLACING
     # other curly brackets (even nested ones, like Infobox), i.e. {{ ... }}
     while self.repeat:
       self.repeat = 0 # if no nested elements than don't repeat
-      text = self.wikiCurRE.sub(self.ParseCurly, text)
+      text = self.wikiCurRE.sub(self.ParseCurly, text) # <-- TODO: Heavy processing, optimize
     self.repeat = 1
 
     ### DELETING
@@ -594,7 +593,7 @@ class cParser(cOperator):
 
     ## MUST GO BEFORE TT TAGS PARSING
     # html ascii decimal characters, i.e. &#230
-    text = self.wikiSChRE.sub(self.ParseSpecialChar, text)
+    text = self.wikiSChRE.sub(self.ParseSpecialChar, text) # <-- TODO: Heavy processing, optimize
     ## MUST GO BEFORE ALL TAGS PARSING
     # tt tags, i.e. <tt>&amp;amp;#230</tt>
     text = self.wikiTttRE.sub(self.ParseTagTT, text)
@@ -603,13 +602,13 @@ class cParser(cOperator):
     # openned tags, i.e. <abc>...</(abc)>
     while self.repeat:
       self.repeat = 0 # if no nested elements than don't repeat
-      text = self.wikiOtaRE.sub(self.ParseOpennedTag, text)
+      text = self.wikiOtaRE.sub(self.ParseOpennedTag, text) # <-- TODO: Heavy processing, optimize
     self.repeat = 1
 
     ### DELETING
     ## MUST GO AFTER OPENNED TAGS PARSING
     # closed tags, i.e. <abc ... />
-    text = self.wikiCtaRE.sub(self.ParseClosedTag, text)
+    text = self.wikiCtaRE.sub(self.ParseClosedTag, text) # <-- TODO: Heavy processing, optimize
 
     ### DELETING
     ## MUST GO AFTER OPENNED AND CLOSED TAGS PARSING
@@ -627,7 +626,7 @@ class cParser(cOperator):
 
     ### REPLACING
     # wiki references, i.e. [[aa|bb]]
-    text = self.wikiRefRE.sub(self.ParseReference, text)
+    text = self.wikiRefRE.sub(self.ParseReference, text) # <-- TODO: Heavy processing, optimize
 
     # no need to continue if only categories and/or links are being parsed
     if not self.arg_text:
@@ -656,7 +655,7 @@ class cParser(cOperator):
 
     ### REPLACING
     # whitespace formating (removes clusters of more than 2 whitespaces)
-    text = self.wikiWhiRE.sub(' ', text)
+    text = self.wikiWhiRE.sub(' ', text) # <-- TODO: Heavy processing, optimize
 
     ### REPLACING
     # remove empty brackets
@@ -664,7 +663,7 @@ class cParser(cOperator):
 
     ### REPLACING
     # headings, i.e. ===...===
-    text = self.wikiHeaRE.sub(self.ParseHeading, text)
+    text = self.wikiHeaRE.sub(self.ParseHeading, text) # <-- TODO: Heavy processing, optimize
 
     self.wikiData.plainText = text
 
@@ -810,7 +809,7 @@ class cParser(cOperator):
           title = titles[0]
           id = ids[0]
 
-          wiki = unicodedata.normalize("NFKD", u"".join(texts))
+          wiki = unicodedata.normalize("NFKD", u"".join(texts)) # <-- TODO: Heavy processing, optimize
           #wiki = u"".join(texts)
 
           ##if ref flag was not found
