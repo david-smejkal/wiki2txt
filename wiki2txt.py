@@ -33,9 +33,10 @@ DEFAULT_ENCODING = 'utf-8'
 # TODO list:
   # TODO: Break up classes into individual files
   # TODO: Cover as much code as possible with unit tests
-  # TODO: Optimize code where appropriate to speed up parsing
+  # TODO: Optimize code where appropriate to speed up processing / parsing
   # TODO: Review the necessity for unicodedata normalization (it seems unnecessary to normalize unicodes in v3)
-  # TODO: Think about allowing one-shot parsing (to wrap STDIN input in mediawiki like structure)
+  # TODO: Fix STDIN processing to actually allow piping of input and separate it from the -T option
+  # TODO: Think about allowing one-shot parsing (to wrap STDIN input in mediawiki like structure) and perhaps do away with the -T option
 
 
 ################################################################################
