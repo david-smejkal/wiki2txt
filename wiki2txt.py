@@ -34,6 +34,7 @@ DEFAULT_ENCODING = 'utf-8'
   # TODO: Break up classes into individual files
   # TODO: Cover as much code as possible with unit tests
   # TODO: Optimize code where appropriate to speed up processing / parsing
+  # TODO: Redesign REGEX parsing so that it would be able to utilize more CPU cores (use multithreading library)
   # TODO: Review the necessity for unicodedata normalization (it seems unnecessary to normalize unicodes in v3)
   # TODO: Fix STDIN processing to actually allow piping of input and separate it from the -T option
   # TODO: Think about allowing one-shot parsing (to wrap STDIN input in mediawiki like structure) and perhaps do away with the -T option
