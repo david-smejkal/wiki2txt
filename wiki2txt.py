@@ -45,63 +45,63 @@ DEFAULT_ENCODING = 'utf-8'
 ################################################################################
 
 #List of classes used in this script:
-  # class cWikiData          - Holds parsed data
-  # class cOperator          - Performs script related operations (option parsing, printing progress, etc.)
-  # class cParser(cOperator) - Performs parsing related operations (core of wiki2txt)
+  # class WikiData             - Holds parsed data
+  # class Conductor            - Performs script related operations (option parsing, printing progress, etc.)
+  # class Processor(Conductor) - Performs parsing related operations (core of wiki2txt)
 
 
-class cWikiData:
+class WikiData:
   """Data structure designed to hold parsed data."""
   def __init__(self):
       self.plain_text = None
       self.redirect = None
-      self.linkList = []
-      self.categoryList = []
+      self.links = []
+      self.categories = []
 
 
-class cOperator:
-  """Helper / handler of this script. Performs script related operations (option parsing, printing progress, etc.)."""
+class Conductor:
+  """Helper / handler / orchestrator of this script. Performs script related operations (option parsing, printing progress, etc.)."""
 
-  def GetParams(self):
+  def get_options(self):
     """This function is self-explained."""
-    parser = optparse.OptionParser(
+    opt_parser = optparse.OptionParser(
               usage = "usage: %prog [options]",
               version = "%prog 0.5.0")
 
-    parser.add_option("-i", "--input-file",
+    opt_parser.add_option("-i", "--input-file",
                       dest="input", metavar="FILE",
                       help="take xml input from FILE otherwise from STDIN")
-    parser.add_option("-o", "--output-file",
+    opt_parser.add_option("-o", "--output-file",
                       dest="output", metavar="FILE",
                       help="output parsed articles to FILE otherwise to STDOUT")
-    parser.add_option("-n", "--no-text", action="store_false",
+    opt_parser.add_option("-n", "--no-text", action="store_false",
                       dest="text", default=False,
                       help="don't parse text (designed for use with -r -l -c options)")
-    parser.add_option("-t", "--text", action="store_true",
+    opt_parser.add_option("-t", "--text", action="store_true",
                       dest="text", default=True,
                       help="produce plain (unformatted) text (DEFAULT)")
-    parser.add_option("-s", "--skip",
+    opt_parser.add_option("-s", "--skip",
                       dest="skip", metavar="NUMBER",
                       help="skip (resume after) NUMBER of articles (and append to files)")
-    parser.add_option("-q", "--quiet", action="store_false",
+    opt_parser.add_option("-q", "--quiet", action="store_false",
                       dest="verbose", default=True,
                       help="stop making noise")
-    parser.add_option("-R", "--references", action="store_true",
+    opt_parser.add_option("-R", "--references", action="store_true",
                       dest="references", default=False,
                       help="retain references in text (links and categories)")
-    parser.add_option("-r", "--redirects",
+    opt_parser.add_option("-r", "--redirects",
                       dest="redirects_file", metavar="FILE",
                       help="outsource redirect articles to the FILE")
-    parser.add_option("-l", "--links",
+    opt_parser.add_option("-l", "--links",
                       dest="links_file", metavar="FILE",
                       help="capture articles' links in the FILE")
-    parser.add_option("-c", "--categories",
+    opt_parser.add_option("-c", "--categories",
                       dest="categories_file", metavar="FILE",
                       help="capture articles' categories in the FILE")
-    parser.add_option("-T", "--test", action="store_true",
+    opt_parser.add_option("-T", "--test", action="store_true",
                       dest="test", default=False,
                       help="test by parsing directly from STDIN (bypasses lxml parser)")
-    (options, args) = parser.parse_args()
+    (options, args) = opt_parser.parse_args()
 
     self.arg_text = options.text
 
@@ -157,7 +157,7 @@ class cOperator:
       self.arg_text = True
 
 
-  def GetFileSize(self, file):
+  def get_file_size(self, file):
     """Self explained."""
     self.arg_input.seek(0, os.SEEK_END)
     size = self.arg_input.tell()
@@ -165,34 +165,33 @@ class cOperator:
     return size
 
 
-  def PrintProgress(self, fileSize, size, oldReturn):
+  def print_progress(self, file_size, size, previous_progress):
     """Prints progress to stdout."""
-    progressPer = "%.2f" % (float(size) / fileSize * 100)
+    progress_percentage = "%.2f" % (float(size) / file_size * 100)
 
-    if oldReturn[0] != progressPer:
+    if previous_progress[0] != progress_percentage:
 
-      progressStr = "%s MB  of  %s MB" % \
+      output = "%s MB  of  %s MB" % \
         (locale.format_string("%0.2f", (float(size) / 1000000), True), \
-        locale.format_string("%d", (fileSize / 1000000), True))
-      progressStr += " (" + progressPer + " %)"
+        locale.format_string("%d", (file_size / 1000000), True))
+      output += " (" + progress_percentage + " %)"
 
-      #print "x"
-      for i in range(oldReturn[1]):
+      for i in range(previous_progress[1]):
         sys.stdout.write('\b')
-      sys.stdout.write(progressStr)
+      sys.stdout.write(output)
       sys.stdout.flush()
 
-      return progressPer, len(progressStr)
+      return progress_percentage, len(output)
 
-    return progressPer, oldReturn[1]
+    return progress_percentage, previous_progress[1]
 
 
-class cParser(cOperator):
-  """Core class. Performs parsing related operations."""
+class Processor(Conductor):
+  """Core class. Performs parsing and processing related operations."""
 
   def __init__(self):
     self.repeat = 1 # flag needed for nested elements
-    self.wikiData = cWikiData()
+    self.wiki_data = WikiData()
     # REGULAR EXPRESSIONS PATTERNS FOR PARSING
     self.wikiRedRE = re.compile(r"(?i)#redirect\s*\[\[(.*?)\]\].*", re.DOTALL)
     self.wikiLanRE = re.compile(r"(.*\[\[Category:.*?\]\]).*", re.DOTALL)
@@ -231,205 +230,188 @@ class cParser(cOperator):
     self.wikiHeaRE = re.compile(r"[=]{2,4}.*?[=]{2,4}")
 
 
-  def ParseLanguageReferences(self, matchObj):
+  def parse_language_references(self, match_obj):
     """Cuts language references from text."""
-    #print "ParseLanguageReferences"
-    return matchObj.group(1)
+    return match_obj.group(1)
 
 
-  def ParseSpecialChar(self, matchObj):
+  def parse_special_char(self, match_obj):
     """Returns html-ascii-decimal-character's unicode representation."""
-    #print "MATCH", matchObj.group(0)
-    #print "ParseSpecialChar char"
+    #print "MATCH", match_obj.group(0)
     try:
-      ret = unichr(int(matchObj.group(0)[2:-1]))
+      ret = unichr(int(match_obj.group(0)[2:-1]))
     except:
       return ""
     return ret
 
 
-  def ParseSpecialMark(self, matchObj):
+  def parse_special_mark(self, match_obj):
     """Returns '<', '>', '&' or '"'."""
-    #print "ParseSpecialMark"
-    if matchObj.group(0) == "&lt;":
+    if match_obj.group(0) == "&lt;":
       return '<'
-    elif matchObj.group(0) == "&gt;":
+    elif match_obj.group(0) == "&gt;":
       return '>'
-    elif matchObj.group(0) == "&amp;":
+    elif match_obj.group(0) == "&amp;":
       return '&'
-    elif matchObj.group(0) == "&quot;":
+    elif match_obj.group(0) == "&quot;":
       return '\"'
 
 
-  def ParseTable(self, matchObj):
+  def parse_table(self, match_obj):
     """Parsing table.. if tables are nested get rid of most nested and repeat."""
-    #print "ParseTable"
-    index = matchObj.group(0)[2:].rfind("{|")
+    index = match_obj.group(0)[2:].rfind("{|")
     if index == -1:
       return ""
     else:
       self.repeat = 1
-      return matchObj.group(0)[:index+2]
+      return match_obj.group(0)[:index+2]
 
 
-  def ParseQuotation(self, matchObj):
+  def parse_quotation(self, match_obj):
     """Returns unformated quotation."""
-    #print "ParseQuotation"
-    #index = matchObj.group(0).rfind("cquote|")
-    #if index == -1:
-      #return ""
-    #else:
-    return matchObj.group(0)[9:-2]
+    # index = match_obj.group(0).rfind("cquote|")
+    # if index == -1:
+    #   return ""
+    # else:
+    return match_obj.group(0)[9:-2]
 
 
-  def ParseCurlyLang(self, matchObj):
+  def parse_curly_lang(self, match_obj):
     """Returns unformated text."""
-    #print "ParseCurlyLang"
-    index = matchObj.group(1).rfind("|")
-    return matchObj.group(1)[index+1:]
+    index = match_obj.group(1).rfind("|")
+    return match_obj.group(1)[index+1:]
 
 
-  def ParseCurly(self, matchObj):
-    """Parse curly bracket.. if nested get rid of most nested and repeat."""
-    #print "ParseCurly"
-
-    deepestIndex = matchObj.group(0).rfind("{{") # start index of last nested element
-    if deepestIndex != -1:
+  def parse_curly(self, match_obj):
+    """Parse a curly bracket. If nested get rid of the most nested one and repeat."""
+    deepest_index = match_obj.group(0).rfind("{{") # start index of last nested element
+    if deepest_index != -1:
       self.repeat = 1 # nested element found, setting repeat flag
     else:
-      deepestIndex = 0 # no nested elements
+      deepest_index = 0 # no nested elements
 
     # parsing double curly brackets differs acording to text before separator
     # {{lang|de|Ostereich}} is different from {{cquote|Kant is monster...}}
-    separatorIndex = matchObj.group(0)[deepestIndex:].find("|")
-    if separatorIndex != -1:
-      separatorIndex += + deepestIndex
+    separator_index = match_obj.group(0)[deepest_index:].find("|")
+    if separator_index != -1:
+      separator_index += + deepest_index
     else:
       #print "regular"
       # {{ ... }} (no "|" separator)
-      return matchObj.group(0)[:deepestIndex]
+      return match_obj.group(0)[:deepest_index]
 
-    if matchObj.group(0)[deepestIndex+2:separatorIndex] == "cquote":
+    if match_obj.group(0)[deepest_index + 2 : separator_index] == "cquote":
       #print "cquote|"
       # {{cquote|Kant is monster...}}
-      return matchObj.group(0)[:deepestIndex] + matchObj.group(0)[separatorIndex+1:-2]
-    elif matchObj.group(0)[deepestIndex+2:separatorIndex] == "lang":
+      return match_obj.group(0)[:deepest_index] + match_obj.group(0)[separator_index+1:-2]
+    elif match_obj.group(0)[deepest_index + 2 : separator_index] == "lang":
       #print "lang|"
       # {{lang|de|Ostereich}}
-      langSeparatorIndex = matchObj.group(0)[separatorIndex+1:-2].rfind("|")
-      if langSeparatorIndex != -1:
-        return matchObj.group(0)[:deepestIndex] + matchObj.group(0)[separatorIndex+1+langSeparatorIndex+1:-2]
+      lang_separator_index = match_obj.group(0)[separator_index+1:-2].rfind("|")
+      if lang_separator_index != -1:
+        return match_obj.group(0)[:deepest_index] + match_obj.group(0)[separator_index + 1 + lang_separator_index + 1 : -2]
       else:
-        return matchObj.group(0)[:deepestIndex] + matchObj.group(0)[separatorIndex+1:-2]
-    elif matchObj.group(0)[deepestIndex+2:separatorIndex] == "main":
+        return match_obj.group(0)[:deepest_index] + match_obj.group(0)[separator_index + 1 : -2]
+    elif match_obj.group(0)[deepest_index+2:separator_index] == "main":
       #print "main|"
       # {{main|History of anarchism}}
-      return "Main article: " + matchObj.group(0)[separatorIndex+1:-2]
+      return "Main article: " + match_obj.group(0)[separator_index + 1 : -2]
     else:
       #print "unknown|"
       # {{...|...}}
-      return matchObj.group(0)[:deepestIndex]
+      return match_obj.group(0)[:deepest_index]
 
 
-  def ParseBlockQuote(self, matchObj):
+  def parse_block_quote(self, match_obj):
     """Returns block quote tag content."""
-    #print "ParseBlockQuote"
-    return matchObj.group(1)
+    return match_obj.group(1)
 
 
-  def ParseClosedTag(self, matchObj):
-    """Parse tags.. if nested get rid of the deepest element and repeat."""
-    #print "closedTag"
+  def parse_closed_tag(self, match_obj):
+    """Parse tags. If nested get rid of the deepest element and repeat."""
     #ff = re.compile(r"(?:<|(?:&lt;))", re.DOTALL)
-    #if matchObj.group(1).find("<"):
-      #return matchObj.group(0)
+    #if match_obj.group(1).find("<"):
+      #return match_obj.group(0)
     #else:
     return ""
-    #print "0:", matchObj.group(0)
-    #print "1:", matchObj.group(1)
+    #print "0:", match_obj.group(0)
+    #print "1:", match_obj.group(1)
     #return ""
 
 
-  def ParseOpennedTag(self, matchObj):
-    """Parse tags.. if nested get rid of the deepest element and repeat."""
+  def parse_openned_tag(self, match_obj):
+    """Parse tags. If nested get rid of the deepest element and repeat."""
     #print "opennedTag"
     #return ""
-    # matchObj.group(0) text with tags "<p>aa</p>"
-    # matchObj.group(1) opening tag "<p>"
-    # matchObj.group(2) tag name
-    #print "MATCH:", matchObj.group(0)
-    #print "SEARCH IN:", matchObj.group(3) #text without tags "aa"
-    #print "TAGNAME:", matchObj.group("tagname")
-    #print "ot:", matchObj.group("otag")
-    #print "ct:", matchObj.group("ctag")
+    # match_obj.group(0) text with tags "<p>aa</p>"
+    # match_obj.group(1) opening tag "<p>"
+    # match_obj.group(2) tag name
+    #print "MATCH:", match_obj.group(0)
+    #print "SEARCH IN:", match_obj.group(3) #text without tags "aa"
+    #print "TAGNAME:", match_obj.group("tagname")
+    #print "ot:", match_obj.group("otag")
+    #print "ct:", match_obj.group("ctag")
     regex = r"(?i)(?:<|(?:&lt;))\s*"
-    regex += matchObj.group("tagname")
+    regex += match_obj.group("tagname")
     regex += r"\s*(?:.*?)(?<!/)(?:>|(?:&gt;))"
     ff = re.compile(regex, re.DOTALL)
     ret = ""
-    for i in ff.findall(matchObj.group(3)):
-      #print matchObj.group(3)
-      ret += matchObj.group(1)
+    for i in ff.findall(match_obj.group(3)):
+      #print match_obj.group(3)
+      ret += match_obj.group(1)
     if ret != "":
       self.repeat = 1
     return ret
 
 
-  def ParseSoup(self, matchObj):
+  def parse_soup(self, match_obj):
     """Removes that stinky tag soup."""
-    #print "ParseSoup"
     ## test whether we are parsing something that's not a tag soup
-    #if len(matchObj.group(0)) > 100:
-      #print matchObj.group(0)
+    #if len(match_obj.group(0)) > 100:
+      #print match_obj.group(0)
     return ""
 
-  def ParseImageText(self, matchObj):
+  def parse_image_text(self, match_obj):
     """Returns unformated reference text."""
-    #print "ParseImageText"
-    lastNested = matchObj.group(0)[2:].rfind("[[") # start index of last nested element
+    lastNested = match_obj.group(0)[2:].rfind("[[") # start index of last nested element
     if lastNested == -1: # if not nested
       return ""
     else:
       self.repeat = 1
-      return matchObj.group(0)[:lastNested+2]
+      return match_obj.group(0)[:lastNested+2]
 
 
-  def RepairCategory(self, matchObj):
-    """Repairs bad categories (i.e. \"category:xxx\", \"Category: xxx\")."""
+  def repair_category(self, match_obj):
+    """Repairs bad categories (i.e. \"category:abc\", \"Category:abc\")."""
 
-    return "Category:" + matchObj.group(2).capitalize() + matchObj.group(3)
+    return "Category:" + match_obj.group(2).capitalize() + match_obj.group(3)
 
 
-  def RepairArticleName(self, articleName):
+  def repair_article_name(self, article_name):
     """Repairs bad formated category/link/title."""
-    if len(articleName) > 0:
-      articleName = self.repaCatRE.sub(self.RepairCategory, articleName)
-      articleName = self.repaBlaRE.sub("_", articleName)
-      articleName = self.repaTraRE.sub("_", articleName)
-      articleName = articleName[0].upper() + articleName[1:]
-    return articleName
+    if len(article_name) > 0:
+      article_name = self.repaCatRE.sub(self.repair_category, article_name)
+      article_name = self.repaBlaRE.sub("_", article_name)
+      article_name = self.repaTraRE.sub("_", article_name)
+      article_name = article_name[0].upper() + article_name[1:]
+    return article_name
 
 
-  def ParseCategory(self, matchObj):
-    """ """
-    #print "ParseCategory"
+  def parse_category(self, match_obj):
+    """ Collects categories """
     if self.arg_references or self.arg_categories_file:
-      index = matchObj.group(1).find('|')
+      index = match_obj.group(1).find('|')
       if index == -1:
-          category = self.RepairArticleName(matchObj.group(1))
+          category = self.repair_article_name(match_obj.group(1))
       else:
-          category = self.RepairArticleName(matchObj.group(1)[:index])
-      self.wikiData.categoryList.append(category)
+          category = self.repair_article_name(match_obj.group(1)[:index])
+      self.wiki_data.categories.append(category)
 
     return ""
 
 
-  #def RepairReference(self, matchObj):
-    #"""Repairs bad categories (i.e. \"category:xxx\", \"Category: xxx\")."""
-    #return "Category:" + matchObj.group(2).capitalize()
-
-  # extended:
-  #   ru-sib,
+  
+  # NOTE: Deliberately moved out of parse_reference() as redeclarring this set was too processor heavy
   LANG_ARRAY = set(['aa', 'ab', 'af', 'ak', 'aln', 'als', 'am', 'an', 'ang', 'ar', 'arc', 'arn', 'arz', 'as', 'ast', 'av', 'avk', 'ay', 'az', 'ba', 'bar', 
                     'bat-smg', 'bcc', 'bcl', 'be', 'be-tarask', 'be-x-old', 'bg', 'bh', 'bi', 'bm', 'bn', 'bo', 'bpy', 'br', 'bs', 'bto', 'bug', 'bxr', 'ca', 
                     'cbk-zam', 'cdo', 'ce', 'ceb', 'ch', 'cho', 'chr', 'chy', 'co', 'cr', 'crh', 'crh-latn', 'crh-cyrl', 'cs', 'csb', 'cu', 'cv', 'cy', 'da', 
@@ -447,110 +429,100 @@ class cParser(cOperator):
                     'sv', 'sw', 'szl', 'ta', 'te', 'tet', 'tg', 'tg-cyrl', 'tg-latn', 'th', 'ti', 'tk', 'tl', 'tlh', 'tn', 'to', 'tokipona', 'tp', 'tpi', 'tr',
                     'ts', 'tt', 'tt-cyrl', 'tt-latn', 'tum', 'tw', 'ty', 'tyv', 'tzm', 'udm', 'ug', 'uk', 'ur', 'uz', 've', 'vec', 'vi', 'vls', 'vo', 'wa',
                     'war', 'wo', 'wuu', 'xal', 'xh', 'xmf', 'ydd', 'yi', 'yo', 'yue', 'za', 'zea', 'zh', 'zh-classical', 'zh-cn', 'zh-hans', 'zh-hant', 'zh-hk',
-                    'zh-min-nan', 'zh-mo', 'zh-my', 'zh-sg', 'zh-tw', 'zh-yue', 'zu', 'simple'])
+                    'zh-min-nan', 'zh-mo', 'zh-my', 'zh-sg', 'zh-tw', 'zh-yue', 'zu', 'simple']) # extended: ru-sib
 
-  def ParseReference(self, matchObj):
+  def parse_reference(self, match_obj):
     """Returns unformated reference text."""
-    #print "ParseReference"
-    annotation = matchObj.group(1)
-    retStr = "<annotation "
+    #print "parse_reference"
+    annotation = match_obj.group(1)
+    ret = "<annotation "
 
     if annotation[:7] == "http://":
       return ""
 
-
     #if annotation[:2] == "s:":
-      #retStr += "source=\"wikisource\" "
+      #ret += "source=\"wikisource\" "
       #annotation = annotation[2:]
     #elif annotation[:2] == "q:":
-      #retStr += "source=\"wikiquote\" "
+      #ret += "source=\"wikiquote\" "
       #annotation = annotation[2:]
     #elif annotation[:2] == "m:":
-      #retStr += "source=\"wikimedia\" "
+      #ret += "source=\"wikimedia\" "
       #annotation = annotation[2:]
     #elif annotation[:annotation.find(':')] in LANG_ARRAY:
       #return ""
 
-    langSeparator = annotation.find(':')
-    if langSeparator != -1 and annotation[:annotation.find(':')] in self.LANG_ARRAY:
+    lang_separator = annotation.find(':')
+    if lang_separator != -1 and annotation[:annotation.find(':')] in self.LANG_ARRAY:
       return ""
 
-    linkSeparator = annotation.find('|')
+    link_separator = annotation.find('|')
 
-    if linkSeparator == -1: # self reference (e.g. [[aaa]])
+    if link_separator == -1: # self reference (e.g. [[aaa]])
       if self.arg_links_file:
-        link = self.RepairArticleName(annotation)
-        self.wikiData.linkList.append(link)
+        link = self.repair_article_name(annotation)
+        self.wiki_data.links.append(link)
       if not self.arg_references:
         return annotation
-      retStr += "target=\"" + annotation + "\">" + annotation
+      ret += "target=\"" + annotation + "\">" + annotation
     else:
       if self.arg_links_file or self.arg_references:
-        link = self.RepairArticleName(annotation[:linkSeparator])
-        self.wikiData.linkList.append(link)
+        link = self.repair_article_name(annotation[:link_separator])
+        self.wiki_data.links.append(link)
       if not self.arg_references:
-        return annotation[linkSeparator+1:]
-      retStr += "target=\"" + link + "\">" + annotation[linkSeparator+1:]
-    retStr += "</annotation>"
-    return retStr
+        return annotation[link_separator+1:]
+      ret += "target=\"" + link + "\">" + annotation[link_separator+1:]
+    ret += "</annotation>"
+    return ret
 
 
-  def ParseHttp(self, matchObj):
+  def parse_http(self, match_obj):
     """Returns text from html reference."""
-    #print "ParseHttp"
-    spaceIndex = matchObj.group(0).find(' ')
-    bracketIndex = matchObj.group(0).find(']')
-    if spaceIndex == -1:
+    space_index = match_obj.group(0).find(' ')
+    bracket_index = match_obj.group(0).find(']')
+    if space_index == -1:
       return ""
     else:
-      return matchObj.group(0)[spaceIndex+1:bracketIndex]+matchObj.group(0)[bracketIndex+1:-1]
+      return match_obj.group(0)[space_index + 1 : bracket_index] + match_obj.group(0)[bracket_index + 1 : -1]
 
 
-  def ParseBold(self, matchObj):
-    """Unbolds."""
-    #print "ParseBold"
-    return matchObj.group(0)[3:-3]
+  def parse_bold(self, match_obj):
+    """Remove bolds."""
+    return match_obj.group(0)[3:-3]
 
 
-  def ParseItallic(self, matchObj):
-    """Unitallics."""
-    #print "ParseItallic"
-    return matchObj.group(0)[2:-2]
+  def parse_itallic(self, match_obj):
+    """Remove itallics."""
+    return match_obj.group(0)[2:-2]
 
 
-  def ParseHeading(self, matchObj):
+  def parse_heading(self, match_obj):
     """Returns parsed heading."""
-    #print "ParseHeading"
-    return re.sub(r"[=]+[\ ]*", "\n",matchObj.group(0))
+    return re.sub(r"[=]+[\ ]*", "\n",match_obj.group(0))
 
 
-  def ParseItemList(self, matchObj):
+  def parse_item_list(self, match_obj):
     """Returns parsed item list (replaces '*' with '\t' in item list)."""
-    #print "ParseItemList"
-    return matchObj.group(0).replace(' ','').replace(':','').replace(';','').replace('*','\t').replace('#','\t')
+    return match_obj.group(0).replace(' ','').replace(':','').replace(';','').replace('*','\t').replace('#','\t')
 
 
-  def ParseTagTT(self, matchObj):
+  def parse_tag_TT(self, match_obj):
     """This tag is used for displaying speciel marks as text."""
-    #print "ParseTagTT"
-    return matchObj.group(1)
+    return match_obj.group(1)
 
 
-  def GetPlainTextLinksCategoriesFromWikiDump(self, text):
-    """Returns plain text from xml text tag content."""
-
-    wikiData = cWikiData()
-
+  def get_wiki_data(self, text):
+    """Get plain (unformatted) text, references, links, categories from wikidump formatted text. """
     # redirected pages (articles), i.e. #REDIRECT
     # redirection is handeled befor this method ... in xml parsing
     if self.arg_references:
       if text[:9].upper() == "#REDIRECT":
-        self.wikiData.plain_text = "<redirect target=\"" + self.wikiRedRE.sub("\g<1>", text) + "\"/>"
+        self.wiki_data.plain_text = "<redirect target=\"" + self.wikiRedRE.sub("\g<1>", text) + "\"/>"
         return
 
     if self.arg_redirects_file:
       if text[:9].upper() == "#REDIRECT":
-        self.wikiData.redirect = self.RepairArticleName(self.wikiRedRE.sub("\g<1>", text))
+        self.wiki_data.redirect = self.repair_article_name(self.wikiRedRE.sub("\g<1>", text))
         return
 
     ### DELETING
@@ -568,14 +540,14 @@ class cParser(cOperator):
     # other curly brackets (even nested ones, like Infobox), i.e. {{ ... }}
     while self.repeat:
       self.repeat = 0 # if no nested elements than don't repeat
-      text = self.wikiCurRE.sub(self.ParseCurly, text) # <-- TODO: Heavy processing, optimize
+      text = self.wikiCurRE.sub(self.parse_curly, text) # <-- TODO: Heavy processing, optimize
     self.repeat = 1
 
     ### DELETING
     # some sort of wiki table, i.e. {| ... |}
     while self.repeat:
       self.repeat = 0 # if no nested elements than don't repeat
-      text = self.wikiTabRE.sub(self.ParseTable, text)
+      text = self.wikiTabRE.sub(self.parse_table, text)
     self.repeat = 1
 
     ### REPLACING
@@ -585,71 +557,70 @@ class cParser(cOperator):
     # e.g. [[abc|...[[defg|[[...]]...]]]]
     while self.repeat:
       self.repeat = 0 # if no nested elements than don't repeat
-      text = self.wikiImgRE.sub(self.ParseImageText, text)
+      text = self.wikiImgRE.sub(self.parse_image_text, text)
     self.repeat = 1
 
     ### REPLACING
     ## MUST GO BEFORE ALL TAGS PARSING
     # blocks of guotes, i.e. <blockquote>...</blockquote>
-    text = self.wikiBlqRE.sub(self.ParseBlockQuote, text)
+    text = self.wikiBlqRE.sub(self.parse_block_quote, text)
 
     ## MUST GO BEFORE TT TAGS PARSING
     # html ascii decimal characters, i.e. &#230
-    text = self.wikiSChRE.sub(self.ParseSpecialChar, text) # <-- TODO: Heavy processing, optimize
+    text = self.wikiSChRE.sub(self.parse_special_char, text) # <-- TODO: Heavy processing, optimize
     ## MUST GO BEFORE ALL TAGS PARSING
     # tt tags, i.e. <tt>&amp;amp;#230</tt>
-    text = self.wikiTttRE.sub(self.ParseTagTT, text)
+    text = self.wikiTttRE.sub(self.parse_tag_TT, text)
 
     ### DELETING
     # openned tags, i.e. <abc>...</(abc)>
     while self.repeat:
       self.repeat = 0 # if no nested elements than don't repeat
-      text = self.wikiOtaRE.sub(self.ParseOpennedTag, text) # <-- TODO: Heavy processing, optimize
+      text = self.wikiOtaRE.sub(self.parse_openned_tag, text) # <-- TODO: Heavy processing, optimize
     self.repeat = 1
 
     ### DELETING
     ## MUST GO AFTER OPENNED TAGS PARSING
     # closed tags, i.e. <abc ... />
-    text = self.wikiCtaRE.sub(self.ParseClosedTag, text) # <-- TODO: Heavy processing, optimize
+    text = self.wikiCtaRE.sub(self.parse_closed_tag, text) # <-- TODO: Heavy processing, optimize
 
     ### DELETING
     ## MUST GO AFTER OPENNED AND CLOSED TAGS PARSING
     # tag soup (bad tags)
-    text = self.wikiStaRE.sub(self.ParseSoup, text)
+    text = self.wikiStaRE.sub(self.parse_soup, text)
 
     ### DELETING
     if self.arg_text or self.arg_categories_file: # if parsing text, categories need to be cut away
       # wiki categories, i.e. [[Category:Anarchism| ]]
-      text = self.wikiCatRE.sub(self.ParseCategory, text)
+      text = self.wikiCatRE.sub(self.parse_category, text)
 
     ### REPLACING
     # wiki http reference, i.e. [http://abc/ ...]
-    text = self.wikiHttRE.sub(self.ParseHttp, text)
+    text = self.wikiHttRE.sub(self.parse_http, text)
 
     ### REPLACING
     # wiki references, i.e. [[aa|bb]]
-    text = self.wikiRefRE.sub(self.ParseReference, text) # <-- TODO: Heavy processing, optimize
+    text = self.wikiRefRE.sub(self.parse_reference, text) # <-- TODO: Heavy processing, optimize
 
     # no need to continue if only categories and/or links are being parsed
     if not self.arg_text:
       return
-      #return wikiData
 
     ### REPLACING
     # &gt &lt &amp etc.
-    text = self.wikiSMaRE.sub(self.ParseSpecialMark, text)
+    text = self.wikiSMaRE.sub(self.parse_special_mark, text)
 
     ### REPLACING
     # bold, i.e. '''...'''
-    text = self.wikiBolRE.sub(self.ParseBold, text)
+    text = self.wikiBolRE.sub(self.parse_bold, text)
 
     ### REPLACING
     # itallic, i.e. ''...''
-    text = self.wikiItaRE.sub(self.ParseItallic, text)
+    text = self.wikiItaRE.sub(self.parse_itallic, text)
 
     ### REPLACING
     # wiki item listing, i.e. "* ..." or "# ..." or ":; ..." or ":# ..."
-    text = self.wikiIteRE.sub(self.ParseItemList, text)
+    text = self.wikiIteRE.sub(self.parse_item_list, text)
 
     ### REPLACING
     # EOL formating
@@ -665,9 +636,9 @@ class cParser(cOperator):
 
     ### REPLACING
     # headings, i.e. ===...===
-    text = self.wikiHeaRE.sub(self.ParseHeading, text) # <-- TODO: Heavy processing, optimize
+    text = self.wikiHeaRE.sub(self.parse_heading, text) # <-- TODO: Heavy processing, optimize
 
-    self.wikiData.plain_text = text
+    self.wiki_data.plain_text = text
 
     return
 
@@ -698,8 +669,8 @@ class cParser(cOperator):
       return context, namespaces[''] if '' in namespaces else namespaces
 
 
-  def ParseTest(self):
-    """Temporary method that will be replaced by unit tests in near future."""
+  def parse_test(self):
+    """TODO: Temporary method that will be replaced by unit tests in near future."""
 
     print("INPUT (use CTRL-D in Unix or CTRL-Z in Windows to start parsing):\n")
     input_data = parser.arg_input.read() # send EOF to signify end of input
@@ -710,11 +681,11 @@ class cParser(cOperator):
     input_data = unicodedata.normalize("NFKD", input_data.decode(DEFAULT_ENCODING))
     #print("\nINPUT (normalized):")
     #print(repr(input_data))
-    parser.GetPlainTextLinksCategoriesFromWikiDump(input_data)
+    parser.get_wiki_data(input_data)
     #print("\nOUTPUT (representation):")
-    #print(repr(parser.wikiData.plain_text))
+    #print(repr(parser.wiki_data.plain_text))
     print("\nOUTPUT:")
-    print(parser.wikiData.plain_text)
+    print(parser.wiki_data.plain_text)
     print("")
 
 
@@ -723,7 +694,7 @@ class cParser(cOperator):
     
     # getting file size
     if self.arg_input != sys.stdin and self.arg_output != sys.stdout and self.arg_verbose:
-      inputFileSize = self.GetFileSize(self.arg_input)
+      inputFileSize = self.get_file_size(self.arg_input)
       oldRet = ("",0)
 
     try: # to initialize wiki2xml parser
@@ -747,8 +718,8 @@ class cParser(cOperator):
           event, element = next(context)
           # percentage
           if self.arg_input != sys.stdin and self.arg_output != sys.stdout and self.arg_verbose:
-            currentFileSize = self.arg_input.tell()
-            oldRet = self.PrintProgress(inputFileSize, currentFileSize, oldRet)
+            current_file_size = self.arg_input.tell()
+            oldRet = self.print_progress(inputFileSize, current_file_size, oldRet)
           if event == "end":
             element.clear()
           while element.getprevious() is not None:
@@ -766,23 +737,23 @@ class cParser(cOperator):
     # prepare links file
     if self.arg_links_file:
       if self.arg_skip:
-        self.arg_lnkFile = open(self.arg_links_file, "ab")
+        self.arg_lnk_file = open(self.arg_links_file, "ab")
       else:
-        self.arg_lnkFile = open(self.arg_links_file, "wb")
+        self.arg_lnk_file = open(self.arg_links_file, "wb")
 
     # prepare categories file
     if self.arg_categories_file:
       if self.arg_skip:
-        self.arg_catFile = open(self.arg_categories_file, "ab")
+        self.arg_cat_file = open(self.arg_categories_file, "ab")
       else:
-        self.arg_catFile = open(self.arg_categories_file, "wb")
+        self.arg_cat_file = open(self.arg_categories_file, "wb")
 
     # prepare redirects file
     if self.arg_redirects_file:
       if self.arg_skip:
-        self.arg_redFile = open(self.arg_redirects_file, "ab")
+        self.arg_red_file = open(self.arg_redirects_file, "ab")
       else:
-        self.arg_redFile = open(self.arg_redirects_file, "wb")
+        self.arg_red_file = open(self.arg_redirects_file, "wb")
 
     for event, element in context:
 
@@ -790,11 +761,11 @@ class cParser(cOperator):
 
         count += 1
 
-        self.wikiData.__init__()
+        self.wiki_data.__init__()
         # percentage
         if self.arg_input != sys.stdin and self.arg_output != sys.stdout and self.arg_verbose:
-          currentFileSize = self.arg_input.tell()
-          oldRet = self.PrintProgress(inputFileSize, currentFileSize, oldRet)
+          current_file_size = self.arg_input.tell()
+          oldRet = self.print_progress(inputFileSize, current_file_size, oldRet)
 
         if element.tag == (ns + "page") and event == "end":
 
@@ -820,55 +791,55 @@ class cParser(cOperator):
             #element.clear()
             #continue
 
-          self.GetPlainTextLinksCategoriesFromWikiDump(wiki)
-          linkText = None
-          categoryText = None
-          redirectText = None
-          repairedTitle = self.RepairArticleName(title)
+          self.get_wiki_data(wiki)
+          link_text = None
+          category_text = None
+          redirect_text = None
+          repaired_title = self.repair_article_name(title)
 
           if self.arg_links_file:
-            linkText = ""
-            for i in self.wikiData.linkList:
-              linkText += repairedTitle + '\t' + i + '\n'
+            link_text = ""
+            for i in self.wiki_data.links:
+              link_text += repaired_title + '\t' + i + '\n'
 
           if self.arg_categories_file:
-            categoryText = ""
-            for i in self.wikiData.categoryList:
-              categoryText += repairedTitle + '\t' + i + '\n'
+            category_text = ""
+            for i in self.wiki_data.categories:
+              category_text += repaired_title + '\t' + i + '\n'
 
           if self.arg_redirects_file:
-            if self.wikiData.redirect is not None:
-              redirectText = repairedTitle + '\t' + self.wikiData.redirect + '\n'
+            if self.wiki_data.redirect is not None:
+              redirect_text = repaired_title + '\t' + self.wiki_data.redirect + '\n'
 
           # write to *.edg files
-          if linkText is not None:
-            self.arg_lnkFile.write(linkText.encode(DEFAULT_ENCODING))
-          if categoryText is not None:
-            self.arg_catFile.write(categoryText.encode(DEFAULT_ENCODING))
-          if redirectText is not None:
-            self.arg_redFile.write(redirectText.encode(DEFAULT_ENCODING))
+          if link_text is not None:
+            self.arg_lnk_file.write(link_text.encode(DEFAULT_ENCODING))
+          if category_text is not None:
+            self.arg_cat_file.write(category_text.encode(DEFAULT_ENCODING))
+          if redirect_text is not None:
+            self.arg_red_file.write(redirect_text.encode(DEFAULT_ENCODING))
 
 
           # write text
-          if self.wikiData.plain_text is not None:
+          if self.wiki_data.plain_text is not None:
 
             # xml output
             if self.arg_text:
-              pageEl = lxml.etree.Element ( "article" )
-              idEl = lxml.etree.SubElement ( pageEl, "id" )
-              idEl.text = id
-              titleEl = lxml.etree.SubElement ( pageEl, "title" )
-              titleEl.text = title
-              textEl = lxml.etree.SubElement ( pageEl, "text" )
-              textEl.text = self.wikiData.plain_text
+              page_element = lxml.etree.Element ( "article" )
+              id_element = lxml.etree.SubElement ( page_element, "id" )
+              id_element.text = id
+              title_element = lxml.etree.SubElement ( page_element, "title" )
+              title_element.text = title
+              text_element = lxml.etree.SubElement ( page_element, "text" )
+              text_element.text = self.wiki_data.plain_text
               if self.arg_references:
-                categoriesEl = lxml.etree.SubElement ( pageEl, "categories" )
-                categoriesText = ""
-                for i in self.wikiData.categoryList:
-                  categoriesText += "<category target=\"" + i + "\"/>"
-                categoriesEl.text = categoriesText
+                categories_element = lxml.etree.SubElement ( page_element, "categories" )
+                categories_text = ""
+                for i in self.wiki_data.categories:
+                  categories_text += "<category target=\"" + i + "\"/>"
+                categories_element.text = categories_text
 
-              lxml.etree.ElementTree(pageEl).write(self.arg_output, encoding=DEFAULT_ENCODING)
+              lxml.etree.ElementTree(page_element).write(self.arg_output, encoding=DEFAULT_ENCODING)
 
           # free every page element (otherwise the RAM would overflow eventually)
           element.clear()
@@ -883,11 +854,11 @@ class cParser(cOperator):
         while element.getprevious() is not None:
           del element.getparent()[0]
         if self.arg_links_file:
-          self.arg_lnkFile.close()
+          self.arg_lnk_file.close()
         if self.arg_categories_file:
-          self.arg_catFile.close()
+          self.arg_cat_file.close()
         if self.arg_redirects_file:
-          self.arg_redFile.close()
+          self.arg_red_file.close()
         break
 
       except IOError:
@@ -898,11 +869,11 @@ class cParser(cOperator):
         while element.getprevious() is not None:
           del element.getparent()[0]
         if self.arg_links_file:
-          self.arg_lnkFile.close()
+          self.arg_lnk_file.close()
         if self.arg_categories_file:
-          self.arg_catFile.close()
+          self.arg_cat_file.close()
         if self.arg_redirects_file:
-          self.arg_redFile.close()
+          self.arg_red_file.close()
         break
 
       except:
@@ -919,11 +890,11 @@ class cParser(cOperator):
       while element.getprevious() is not None:
         del element.getparent()[0]
       if self.arg_links_file:
-        self.arg_lnkFile.close()
+        self.arg_lnk_file.close()
       if self.arg_categories_file:
-        self.arg_catFile.close()
+        self.arg_cat_file.close()
       if self.arg_redirects_file:
-        self.arg_redFile.close()
+        self.arg_red_file.close()
 
 
 ################################################################################
@@ -937,23 +908,23 @@ class cParser(cOperator):
 
 if __name__ == "__main__":
 
-  parser = cParser() # create parser object
-  parser.GetParams() # evaluate startup parameters
+  processor = Processor() # construct a processor (will inherit Conductor)
+  processor.get_options() # evaluate startup options
 
   # TODO: Replace with proper lxml parsing from input
   # temporary way to extract plain_text from short wiki-like content (currently aimed to allow some direct testing)
-  if parser.arg_test: # testing? (input from stdin)
-    parser.ParseTest()
+  if processor.arg_test: # testing? (input from stdin)
+    processor.parse_test()
     sys.exit(0) # don't attempt to continue parsing with lxml during STDIN tests
 
   # do the actual parsing
-  if parser.arg_text or parser.arg_links_file or parser.arg_categories_file or parser.arg_redirects_file:
-    parser.ParseWiki()
+  if processor.arg_text or processor.arg_links_file or processor.arg_categories_file or processor.arg_redirects_file:
+    processor.ParseWiki()
   else: # Options misued? / No output expected to be produced to be produced?
-    if parser.arg_verbose:
+    if processor.arg_verbose:
       sys.stdout.write("\nINFO: Executed with options that didn't result in any parsed output. Try to use some other option combination.\n")
 
-  del parser # clean up
+  del processor # clean up
 
 ################################################################################
 #--------------------------------</MAIN>---------------------------------------#
