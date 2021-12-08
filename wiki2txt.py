@@ -23,9 +23,9 @@ import lxml.etree # pip install lxml
 
 # XML OUTPUT FORMAT
   #<article>
-    #<id>ID</id>
-    #<title>TITLE</title>
-    #<text>PLAINTEXT</text>
+    #<id>12</id>
+    #<title>Anarchism</title>
+    #<text>Anarchism is a political philosophy ...</text>
   #</article>
 
 DEFAULT_ENCODING = 'utf-8'
@@ -53,7 +53,7 @@ DEFAULT_ENCODING = 'utf-8'
 class cWikiData:
   """Data structure designed to hold parsed data."""
   def __init__(self):
-      self.plainText = None
+      self.plain_text = None
       self.redirect = None
       self.linkList = []
       self.categoryList = []
@@ -79,7 +79,7 @@ class cOperator:
                       help="don't parse text (designed for use with -r -l -c options)")
     parser.add_option("-t", "--text", action="store_true",
                       dest="text", default=True,
-                      help="produce plaintext (DEFAULT)")
+                      help="produce plain (unformatted) text (DEFAULT)")
     parser.add_option("-s", "--skip",
                       dest="skip", metavar="NUMBER",
                       help="skip (resume after) NUMBER of articles (and append to files)")
@@ -545,7 +545,7 @@ class cParser(cOperator):
     # redirection is handeled befor this method ... in xml parsing
     if self.arg_references:
       if text[:9].upper() == "#REDIRECT":
-        self.wikiData.plainText = "<redirect target=\"" + self.wikiRedRE.sub("\g<1>", text) + "\"/>"
+        self.wikiData.plain_text = "<redirect target=\"" + self.wikiRedRE.sub("\g<1>", text) + "\"/>"
         return
 
     if self.arg_redirects_file:
@@ -667,7 +667,7 @@ class cParser(cOperator):
     # headings, i.e. ===...===
     text = self.wikiHeaRE.sub(self.ParseHeading, text) # <-- TODO: Heavy processing, optimize
 
-    self.wikiData.plainText = text
+    self.wikiData.plain_text = text
 
     return
 
@@ -712,9 +712,9 @@ class cParser(cOperator):
     #print(repr(input_data))
     parser.GetPlainTextLinksCategoriesFromWikiDump(input_data)
     #print("\nOUTPUT (representation):")
-    #print(repr(parser.wikiData.plainText))
+    #print(repr(parser.wikiData.plain_text))
     print("\nOUTPUT:")
-    print(parser.wikiData.plainText)
+    print(parser.wikiData.plain_text)
     print("")
 
 
@@ -850,7 +850,7 @@ class cParser(cOperator):
 
 
           # write text
-          if self.wikiData.plainText is not None:
+          if self.wikiData.plain_text is not None:
 
             # xml output
             if self.arg_text:
@@ -860,7 +860,7 @@ class cParser(cOperator):
               titleEl = lxml.etree.SubElement ( pageEl, "title" )
               titleEl.text = title
               textEl = lxml.etree.SubElement ( pageEl, "text" )
-              textEl.text = self.wikiData.plainText
+              textEl.text = self.wikiData.plain_text
               if self.arg_references:
                 categoriesEl = lxml.etree.SubElement ( pageEl, "categories" )
                 categoriesText = ""
@@ -941,7 +941,7 @@ if __name__ == "__main__":
   parser.GetParams() # evaluate startup parameters
 
   # TODO: Replace with proper lxml parsing from input
-  # temporary way to extract plaintext from short wiki-like content (currently aimed to allow some direct testing)
+  # temporary way to extract plain_text from short wiki-like content (currently aimed to allow some direct testing)
   if parser.arg_test: # testing? (input from stdin)
     parser.ParseTest()
     sys.exit(0) # don't attempt to continue parsing with lxml during STDIN tests

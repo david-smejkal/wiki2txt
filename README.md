@@ -1,6 +1,6 @@
 # wiki2txt
-A tool to extract plaintext, redirects, links and categories from `wikidumps` (https://dumps.wikimedia.org/enwiki/).<br />
-Designed to prepare "digestible food" (clean data) for AI learning software.<br />
+A tool to extract plain (unformatted) text, redirects, links and categories from `wikidumps` (https://dumps.wikimedia.org/enwiki/).<br />
+Designed to prepare "digestible food" (clean data) for AI training software.<br />
 
 Written in Python, utilizes `lxml` SAX (easy on memory) parser and leans heavily on the powers of the `re` library.<br /><br />
 ![wiki2txt demo](https://smejkal.software/img/wiki2txt-demo.gif)
@@ -24,7 +24,7 @@ Options:
   -i FILE, --input-file=FILE   take xml input from FILE otherwise from STDIN
   -o FILE, --output-file=FILE  output parsed articles to FILE otherwise to STDOUT
   -n, --no-text                don't parse text (designed for use with -r -l -c options)
-  -t, --text                   produce plaintext (DEFAULT)
+  -t, --text                   produce plain (unformatted) text (DEFAULT)
   -s NUMBER, --skip=NUMBER     skip (resume after) NUMBER of articles (appends to output files)
   -q, --quiet                  stop making noise
   -R, --references             retain references in text (links and categories)
@@ -37,9 +37,9 @@ Options:
 # Output Format
 ```xml
 <article>
-  <id>ID</id>
-  <title>TITLE</title>
-  <text>PLAINTEXT</text>
+  <id>12</id>
+  <title>Anarchism</title>
+  <text>Anarchism is a political philosophy ...</text>
 </article>
 ```
 
