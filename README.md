@@ -1,5 +1,5 @@
 # wiki2txt
-A tool to extract plain (unformatted) text, redirects, links and categories from `wikidumps` (https://dumps.wikimedia.org/enwiki/).<br />
+A tool to extract plain (unformatted) text, redirects, links and categories from `wikidumps` (https://dumps.wikimedia.org/enwiki/).
 Designed to prepare "digestible food" (clean data) for AI training software.<br />
 
 Written in Python, utilizes `lxml` SAX (easy on memory) parser and leans heavily on the powers of the `re` library.<br /><br />
