@@ -1,15 +1,14 @@
 # wiki2txt
-A tool to extract plain (unformatted) text, redirects, links and categories from wikipedia backups.<br />
+A tool to extract plain (unformatted) text, redirects, links and categories from wikipedia backups (dumps).<br />
 Designed to prepare clean training data for AI training / Machine Learning software.<br />
+
+Written in Python, utilizes `lxml` SAX (easy on memory) parser and leans heavily on the powers of the `re` library.<br /><br />
+![wiki2txt demo](https://smejkal.software/img/wiki2txt-demo.gif)
 
 [Wiki XML dumps](https://dumps.wikimedia.org/backup-index-bydb.html):
 - [https://dumps.wikimedia.org/enwiki/](https://dumps.wikimedia.org/enwiki/) (English)
 - [https://dumps.wikimedia.org/ruwiki/](https://dumps.wikimedia.org/ruwiki/) (Russian)
 - [https://dumps.wikimedia.org/zhwiki/](https://dumps.wikimedia.org/zhwiki/) (Chinesse)
-- etc.
-
-Written in Python, utilizes `lxml` SAX (easy on memory) parser and leans heavily on the powers of the `re` library.<br /><br />
-![wiki2txt demo](https://smejkal.software/img/wiki2txt-demo.gif)
 
 # Installation
 Supported Python versions: `2.7+`, `3.4+`<br />
