@@ -77,12 +77,3 @@ $ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2
 ```shell-session
 (wiki2txt) $ python wiki2txt.py -t -i enwiki-latest-pages-articles.xml -o latest-food.xml
 ```
-
-# Versioning semantics
-```
-v0.4.1
- ^ ^ ^
- | | ∟-> Patch version (bug fix / improvement / new feature)
- | ∟---> Minor version (good amount of new features / improvements)
- ∟-----> Major version (backwards incompatible changes)
-```
