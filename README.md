@@ -1,6 +1,12 @@
 # wiki2txt
-A tool to extract plain (unformatted) text, redirects, links and categories from `wikidumps` (https://dumps.wikimedia.org/enwiki/).
+A tool to extract plain (unformatted) text, redirects, links and categories from wikipedia backups.<br />
 Designed to prepare clean training data for AI training / Machine Learning software.<br />
+
+[Wiki XML dumps](https://dumps.wikimedia.org/backup-index-bydb.html):
+- [https://dumps.wikimedia.org/enwiki/](https://dumps.wikimedia.org/enwiki/) (English)
+- [https://dumps.wikimedia.org/ruwiki/](https://dumps.wikimedia.org/ruwiki/) (Russian)
+- [https://dumps.wikimedia.org/zhwiki/](https://dumps.wikimedia.org/zhwiki/) (Chinesse)
+- etc.
 
 Written in Python, utilizes `lxml` SAX (easy on memory) parser and leans heavily on the powers of the `re` library.<br /><br />
 ![wiki2txt demo](https://smejkal.software/img/wiki2txt-demo.gif)
@@ -56,7 +62,7 @@ Based on stats above it should take roughly 3 hours to process the latest wikidu
 
 ## Download => Decompress => Parse
 ```console
-(wiki2txt) $ wget -O articles1.xml https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles1.xml-p1p41242.bz2 # 234 MB
+(wiki2txt) $ wget -O articles1.xml.bz2 https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles1.xml-p1p41242.bz2 # 234 MB
 (wiki2txt) $ bzip2 --decompress articles1.xml.bz2 # 893 MB
 (wiki2txt) $ python wiki2txt.py -i articles1.xml -o parsed.xml -r redirects.edg # 400 MB
 ```
