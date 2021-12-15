@@ -783,7 +783,6 @@ class Processor(Conductor):
           id = ids[0]
 
           wiki = unicodedata.normalize("NFKD", u"".join(texts)) # <-- TODO: Heavy processing, optimize
-          #wiki = u"".join(texts)
 
           ##if ref flag was not found
           ##ignore redirected pages (articles), i.e. #REDIRECT or #redirect
