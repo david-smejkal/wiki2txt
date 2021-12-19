@@ -2,7 +2,7 @@
 A tool to extract plain (unformatted) text, redirects, links and categories from wikipedia backups (dumps).<br />
 Designed to prepare clean training data for AI training / Machine Learning software.<br />
 
-Written in Python, utilizes `lxml` SAX (easy on memory) parser and leans heavily on the powers of the `re` library.<br /><br />
+Written in Python, utilizes `lxml` SAX (memory efficient) parser and leans heavily on the powers of the `re` library.<br /><br />
 ![wiki2txt demo](https://smejkal.software/img/wiki2txt-demo.gif)
 
 [Wiki XML dumps](https://dumps.wikimedia.org/backup-index-bydb.html):
@@ -67,18 +67,18 @@ Based on stats above it should take roughly 3 hours to process the latest wikidu
 ```
 
 ## Download latest complete wikidump
-**HINT:** add `--continue` parameter if you need to resume the download
 ```csharp
-$ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2
+$ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2 # 18 GB
 ```
+**HINT:** add `--continue` parameter if you need to resume the download
 
 ## Decompress
-**HINT:** add `-k` parameter if you want to preserve the original archive
 ```console
-$ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2
+$ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2 # 81 GB
 ```
+**HINT:** add `-k` parameter if you want to preserve the original archive
 
 ## Parse
 ```shell-session
-(wiki2txt) $ python wiki2txt.py -t -i enwiki-latest-pages-articles.xml -o latest-food.xml
+(wiki2txt) $ python wiki2txt.py -i enwiki-latest-pages-articles.xml -o clean-data.xml
 ```
