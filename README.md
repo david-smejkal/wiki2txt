@@ -8,7 +8,7 @@ Written in Python, utilizes `lxml` SAX (memory efficient) parser and leans heavi
 [Wiki XML dumps](https://dumps.wikimedia.org/backup-index-bydb.html):
 - [https://dumps.wikimedia.org/enwiki/](https://dumps.wikimedia.org/enwiki/) (English)
 - [https://dumps.wikimedia.org/ruwiki/](https://dumps.wikimedia.org/ruwiki/) (Russian)
-- [https://dumps.wikimedia.org/zhwiki/](https://dumps.wikimedia.org/zhwiki/) (Chinesse)
+- [https://dumps.wikimedia.org/zhwiki/](https://dumps.wikimedia.org/zhwiki/) (Chinese)
 
 # Installation
 Supported Python versions: `2.7+`, `3.4+`<br />
