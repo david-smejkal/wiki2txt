@@ -56,7 +56,7 @@ Options:
 `Python v2.7` - Wikidump data processing speed of `5.2 MB/s`<br />
 *NOTICE: Processing with Python `v3` is about 46% faster than with `v2`.* <br />
 
-Based on above it should take roughly 3 hours to process the latest `en` wikidump (81GB of decompressed data).
+Based on above, it should take roughly 3 hours to process the latest `en` wikidump (81GB of decompressed data).
 
 # Examples
 
