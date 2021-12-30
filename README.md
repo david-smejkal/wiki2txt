@@ -50,13 +50,13 @@ Options:
 ```
 
 # Performance
-> Meassured with one core of Intel i7 1.8 GHz processor
+> Tested with one core of Intel i7 1.8 GHz processor
 
 `Python v3.9` - Wikidump data processing speed of `7.6 MB/s`<br />
 `Python v2.7` - Wikidump data processing speed of `5.2 MB/s`<br />
 *NOTICE: Processing with Python `v3` is about 46% faster than with `v2`.* <br />
 
-Based on stats above it should take roughly 3 hours to process the latest `en` wikidump (81GB of decompressed data).
+Based on above it should take roughly 3 hours to process the latest `en` wikidump (81GB of decompressed data).
 
 # Examples
 
