@@ -14,6 +14,7 @@ Written in Python, utilizes `lxml` SAX (memory efficient) parser and leans heavi
 Supported Python versions: `2.7+`, `3.4+`<br />
 ```csharp
 $ mkproject wiki2txt
+(wiki2txt) $ git clone https://github.com/david-smejkal/wiki2txt.git .
 (wiki2txt) $ pip install -r requirements.txt
 ```
 *Optional: Install and configure [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to use `mkproject` to create your virtual environment.*
@@ -53,9 +54,9 @@ Options:
 
 `Python v3.9` - Wikidump data processing speed of `7.6 MB/s`<br />
 `Python v2.7` - Wikidump data processing speed of `5.2 MB/s`<br />
-*NOTE: Processing with Python `v3` is about 46% faster than with `v2`.* <br />
+*NOTICE: Processing with Python `v3` is about 46% faster than with `v2`.* <br />
 
-Based on stats above it should take roughly 3 hours to process the latest wikidump (81GB of decompressed data).
+Based on stats above it should take roughly 3 hours to process the latest `en` wikidump (81GB of decompressed data).
 
 # Examples
 
