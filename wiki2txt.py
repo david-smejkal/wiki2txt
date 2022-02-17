@@ -910,8 +910,8 @@ if __name__ == "__main__":
   processor = Processor() # construct a processor (will inherit Conductor)
   processor.get_options() # evaluate startup options
 
+  # HACK: temporary way to extract plain_text from short wiki-like content (currently aimed to allow some direct testing)
   # TODO: Replace with proper lxml parsing from input
-  # temporary way to extract plain_text from short wiki-like content (currently aimed to allow some direct testing)
   if processor.arg_test: # testing? (input from stdin)
     processor.parse_test()
     sys.exit(0) # don't attempt to continue parsing with lxml during STDIN tests
@@ -919,11 +919,11 @@ if __name__ == "__main__":
   # do the actual parsing
   if processor.arg_text or processor.arg_links_file or processor.arg_categories_file or processor.arg_redirects_file:
     processor.ParseWiki()
-  else: # Options misued? / No output expected to be produced to be produced?
+  else: # Options misued? / No output expected to be produced?
     if processor.arg_verbose:
       sys.stdout.write("\nINFO: Executed with options that didn't result in any parsed output. Try to use some other option combination.\n")
 
-  del processor # clean up
+  del processor # clean-up
 
 ################################################################################
 #--------------------------------</MAIN>---------------------------------------#
