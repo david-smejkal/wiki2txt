@@ -1,5 +1,5 @@
 # wiki2txt
-A tool to extract plain (unformatted) multilingual text, redirects, links and categories from wikipedia backups (dumps).<br />
+A tool to extract plain (unformatted) multilingual text, redirects, links and categories from wikipedia backups.
 Designed to prepare clean training data for AI training / Machine Learning software.<br />
 
 Written in Python, utilizes `lxml` SAX (memory efficient) parser and leans heavily on the powers of the `re` library.<br /><br />
@@ -58,26 +58,26 @@ Options:
 *NOTICE: Parsing speed usually improves with newer versions of Python and lxml library.*<br />
 *e.g. parsing with python `v3.10` is about 76% faster than with `v2.7`.* <br />
 
-Based on above, it should take roughly 3 hours to process the latest `en` wikidump (81GB of decompressed data).
+Based on the above, it should take about 2 hours to process the latest `en` wikidump (72 GB of decompressed data).
 
 # Examples
 
 ## Download => Decompress => Parse
 ```console
-(wiki2txt) $ wget -O articles1.xml.bz2 https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles1.xml-p1p41242.bz2 # 234 MB
-(wiki2txt) $ bzip2 --decompress articles1.xml.bz2 # 893 MB
+(wiki2txt) $ wget -O articles1.xml.bz2 https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles1.xml-p1p41242.bz2 # 254 MB
+(wiki2txt) $ bzip2 --decompress articles1.xml.bz2 # 940 MB
 (wiki2txt) $ python wiki2txt.py -i articles1.xml -o parsed.xml -r redirects.edg # 400 MB
 ```
 
 ## Download latest complete wikidump
 ```csharp
-$ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2 # 18 GB
+$ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2 # 19 GB
 ```
 **HINT:** add `--continue` parameter if you need to resume the download
 
 ## Decompress
 ```console
-$ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2 # 81 GB
+$ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2 # 72 GB
 ```
 **HINT:** add `-k` parameter if you want to preserve the original archive
 
