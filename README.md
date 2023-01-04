@@ -1,5 +1,5 @@
 # wiki2txt
-A tool to extract plain (unformatted) text, redirects, links and categories from wikipedia backups (dumps).<br />
+A tool to extract plain (unformatted) multilingual text, redirects, links and categories from wikipedia backups (dumps).<br />
 Designed to prepare clean training data for AI training / Machine Learning software.<br />
 
 Written in Python, utilizes `lxml` SAX (memory efficient) parser and leans heavily on the powers of the `re` library.<br /><br />
@@ -50,11 +50,13 @@ Options:
 ```
 
 # Performance
-> Tested with one core of Intel i7 1.8 GHz processor
+> Tested using a single core of Intel i7 1.8 GHz processor
 
-`Python v3.9` - Wikidump data processing speed of `7.6 MB/s`<br />
-`Python v2.7` - Wikidump data processing speed of `5.2 MB/s`<br />
-*NOTICE: Processing with Python `v3` is about 46% faster than with `v2`.* <br />
+`Python v3.10 (lxml v4.9.2)` - Wikidump data processing speed of `9.2 MB/s`<br />
+`Python v3.9  (lxml v4.6.4)` - Wikidump data processing speed of `7.6 MB/s`<br />
+`Python v2.7  (lxml v4.6.4)` - Wikidump data processing speed of `5.2 MB/s`<br />
+*NOTICE: Parsing speed usually improves with newer versions of Python and lxml library.*<br />
+*e.g. parsing with python `v3.10` is about 76% faster than with `v2.7`.* <br />
 
 Based on above, it should take roughly 3 hours to process the latest `en` wikidump (81GB of decompressed data).
 
