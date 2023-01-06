@@ -13,7 +13,7 @@ Written in Python, utilizes `lxml` SAX (memory efficient) parser and leans heavi
 # Installation
 Supported Python versions: `2.7+`, `3.4+`<br /><br />
 
-[ Optional: Install and configure [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) tto create your virtual environment with `mkproject` ]
+[ Optional: Install and configure [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment with `mkproject` ]
 ```bash
 $ mkproject wiki2txt
 ```
