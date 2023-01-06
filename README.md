@@ -11,13 +11,29 @@ Written in Python, utilizes `lxml` SAX (memory efficient) parser and leans heavi
 - [https://dumps.wikimedia.org/zhwiki/](https://dumps.wikimedia.org/zhwiki/) (Chinese)
 
 # Installation
-Supported Python versions: `2.7+`, `3.4+`<br />
-```csharp
+Supported Python versions: `2.7+`, `3.4+`<br /><br />
+
+Clone this project from github:
+```bash
+$ git clone https://github.com/david-smejkal/wiki2txt.git
+```
+
+[ Optional: Install and configure [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) tto create your virtual environment with `mkproject` ]
+```bash
 $ mkproject wiki2txt
+```
+
+Alternatively if you don't have `mkproject` then create the virtual environment manually:
+```bash
+$ virtualenv --python=`which python3` wiki2txt
+$ source ./wiki2txt/bin/activate
+(wiki2txt) $
+```
+
+```csharp
 (wiki2txt) $ git clone https://github.com/david-smejkal/wiki2txt.git .
 (wiki2txt) $ pip install -r requirements.txt
 ```
-*Optional: Install and configure [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to use `mkproject` to create your virtual environment.*
 
 # Usage
 ```csharp
