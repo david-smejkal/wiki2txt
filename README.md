@@ -13,11 +13,6 @@ Written in Python, utilizes `lxml` SAX (memory efficient) parser and leans heavi
 # Installation
 Supported Python versions: `2.7+`, `3.4+`<br /><br />
 
-Clone this project from github:
-```bash
-$ git clone https://github.com/david-smejkal/wiki2txt.git
-```
-
 [ Optional: Install and configure [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) tto create your virtual environment with `mkproject` ]
 ```bash
 $ mkproject wiki2txt
