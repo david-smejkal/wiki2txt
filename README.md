@@ -63,11 +63,12 @@ Options:
 # Performance
 > Tested using a single core of Intel i7 1.8 GHz processor
 
+`Python v3.11 (lxml v4.9.2)` - Wikidump data processing speed of `9.7 MB/s`<br />
 `Python v3.10 (lxml v4.9.2)` - Wikidump data processing speed of `9.2 MB/s`<br />
 `Python v3.9  (lxml v4.6.4)` - Wikidump data processing speed of `7.6 MB/s`<br />
 `Python v2.7  (lxml v4.6.4)` - Wikidump data processing speed of `5.2 MB/s`<br />
 *NOTICE: Parsing speed usually improves with newer versions of Python and lxml library.*<br />
-*e.g. parsing with python `v3.10` is about 76% faster than with `v2.7`.* <br />
+*e.g. parsing with python `v3.11` is about 86% faster than with `v2.7`.* <br />
 
 Based on the above, it should take about 2 hours to process the latest `en` wikidump (72 GB of decompressed data).
 
