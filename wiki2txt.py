@@ -333,33 +333,36 @@ class Processor(Conductor):
     #if match_obj.group(1).find("<"):
       #return match_obj.group(0)
     #else:
-    return ""
-    #print "0:", match_obj.group(0)
-    #print "1:", match_obj.group(1)
     #return ""
+    # print("DEBUG: 0:", match_obj.group(0))
+    # print("DEBUG: 1:", match_obj.group(1))
+    return ""
 
 
   def parse_openned_tag(self, match_obj):
     """Parse tags. If nested get rid of the deepest element and repeat."""
-    #print "opennedTag"
+    # print("DEBUG: opennedTag")
     #return ""
     # match_obj.group(0) text with tags "<p>aa</p>"
     # match_obj.group(1) opening tag "<p>"
     # match_obj.group(2) tag name
-    #print "MATCH:", match_obj.group(0)
-    #print "SEARCH IN:", match_obj.group(3) #text without tags "aa"
-    #print "TAGNAME:", match_obj.group("tagname")
-    #print "ot:", match_obj.group("otag")
-    #print "ct:", match_obj.group("ctag")
+    # print("DEBUG: MATCH:", match_obj.group(0))
+    # print("DEBUG: SEARCH IN:", match_obj.group(3)) #text without tags "aa"
+    # print("DEBUG: TAGNAME:", match_obj.group("tagname"))
+    #print("ot:", match_obj.group("otag"))
+    #print("ct:", match_obj.group("ctag"))
     regex = r"(?i)(?:<|(?:&lt;))\s*"
     regex += match_obj.group("tagname")
     regex += r"\s*(?:.*?)(?<!/)(?:>|(?:&gt;))"
+    # print("DEBUG: before parse_openned_tag() re.compile()")
     ff = re.compile(regex, re.DOTALL)
     ret = ""
+    # print("DEBUG: before parse_openned_tag() ff.findall()")
     for i in ff.findall(match_obj.group(3)):
-      #print match_obj.group(3)
+      # print(match_obj.group(3))
       ret += match_obj.group(1)
     if ret != "":
+      # print("DEBUG: REPEATING")
       self.repeat = 1
     return ret
 
@@ -539,14 +542,14 @@ class Processor(Conductor):
     ### DELETING / REPLACING
     # other curly brackets (even nested ones, like Infobox), i.e. {{ ... }}
     while self.repeat:
-      self.repeat = 0 # if no nested elements than don't repeat
+      self.repeat = 0 # if no nested elements then don't repeat
       text = self.wikiCurRE.sub(self.parse_curly, text) # <-- TODO: Heavy processing, optimize
     self.repeat = 1
 
     ### DELETING
     # some sort of wiki table, i.e. {| ... |}
     while self.repeat:
-      self.repeat = 0 # if no nested elements than don't repeat
+      self.repeat = 0 # if no nested elements then don't repeat
       text = self.wikiTabRE.sub(self.parse_table, text)
     self.repeat = 1
 
@@ -556,7 +559,7 @@ class Processor(Conductor):
     # wiki references are sometimes nested in image comments,
     # e.g. [[abc|...[[defg|[[...]]...]]]]
     while self.repeat:
-      self.repeat = 0 # if no nested elements than don't repeat
+      self.repeat = 0 # if no nested elements then don't repeat
       text = self.wikiImgRE.sub(self.parse_image_text, text)
     self.repeat = 1
 
@@ -574,22 +577,31 @@ class Processor(Conductor):
 
     ### DELETING
     # openned tags, i.e. <abc>...</(abc)>
+    # print("DEBUG: before parse_openned_tag()")
     while self.repeat:
-      self.repeat = 0 # if no nested elements than don't repeat
+      self.repeat = 0 # if no nested elements then don't repeat
+      #print(text)
+      #with open('last-text2.txt', 'wb') as output: # DEBUG
+      #  output.write(text.encode(DEFAULT_ENCODING)) # DEBUG
+      # print("DEBUG: before calling re")
       text = self.wikiOtaRE.sub(self.parse_openned_tag, text) # <-- TODO: Heavy processing, optimize
+      # print("DEBUG: after calling re")
     self.repeat = 1
 
     ### DELETING
     ## MUST GO AFTER OPENNED TAGS PARSING
     # closed tags, i.e. <abc ... />
+    # print("DEBUG: before parse_closed_tag()")
     text = self.wikiCtaRE.sub(self.parse_closed_tag, text) # <-- TODO: Heavy processing, optimize
 
     ### DELETING
     ## MUST GO AFTER OPENNED AND CLOSED TAGS PARSING
     # tag soup (bad tags)
+    # print("DEBUG: before parse_soup()")
     text = self.wikiStaRE.sub(self.parse_soup, text)
 
     ### DELETING
+    # print("DEBUG: before parse_category()")
     if self.arg_text or self.arg_categories_file: # if parsing text, categories need to be cut away
       # wiki categories, i.e. [[Category:Anarchism| ]]
       text = self.wikiCatRE.sub(self.parse_category, text)
@@ -636,6 +648,7 @@ class Processor(Conductor):
 
     ### REPLACING
     # headings, i.e. ===...===
+    # print("DEBUG: before parse_heading()")
     text = self.wikiHeaRE.sub(self.parse_heading, text) # <-- TODO: Heavy processing, optimize
 
     self.wiki_data.plain_text = text
@@ -790,6 +803,7 @@ class Processor(Conductor):
             #element.clear()
             #continue
 
+          # print("DEBUG: before self.get_wiki_data()")
           self.get_wiki_data(wiki)
           link_text = None
           category_text = None
