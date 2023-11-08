@@ -28,6 +28,7 @@ import lxml.etree # pip install lxml
     #<text>Anarchism is a political philosophy ...</text>
   #</article>
 
+PYTHON3 = sys.version_info >= (3, 0)
 DEFAULT_ENCODING = 'utf-8'
 
 # TODO list:
@@ -386,7 +387,6 @@ class Processor(Conductor):
 
   def repair_category(self, match_obj):
     """Repairs bad categories (i.e. \"category:abc\", \"Category:abc\")."""
-
     return "Category:" + match_obj.group(2).capitalize() + match_obj.group(3)
 
 
@@ -409,9 +409,7 @@ class Processor(Conductor):
       else:
           category = self.repair_article_name(match_obj.group(1)[:index])
       self.wiki_data.categories.append(category)
-
     return ""
-
 
   
   # NOTE: Deliberately moved out of parse_reference() as redeclarring this set was too processor heavy
@@ -657,31 +655,40 @@ class Processor(Conductor):
 
 
   def get_etree_and_namespace(self, xml_file):
-      """Designed to grab the namespace from the first element of the xml file.
-         Unfortunately to do so it has to start parsing and so it returns both namespace and etree.
-         TODO: Find a way to restart lxml parsing and make this function solely about just retrieving namespaces
-      """
-      events = ("start", "start-ns", "end")
-      root = None
-      namespaces = {}
-      if xml_file == sys.stdin: # input from STDIN?
+    """Designed to grab the namespace from the first element of the xml file.
+        Unfortunately to do so it has to start parsing and so it returns both namespace and etree.
+        TODO: Find a way to restart lxml parsing and make this function solely about just retrieving namespaces
+    """
+    events = ("start", "start-ns", "end")
+    root = None
+    namespaces = {}
+    if xml_file == sys.stdin: # input from STDIN?
+      if PYTHON3: # python v3+?
         xml_file = xml_file.buffer # work on stdin buffer
-      context = lxml.etree.iterparse(xml_file, events)
-      context = iter(context)
-      event, elem = next(context)
-      if event == "start-ns":
-          if elem[0] in namespaces and namespaces[elem[0]] != elem[1]:
-              # NOTE: It is perfectly valid to have the same prefix refer
-              #     to different URI namespaces in different parts of the
-              #     document. This exception serves as a reminder that this
-              #     solution is not robust.    Use at your own peril.
-              raise KeyError("Duplicate prefix with different URI found.")
-          namespaces[elem[0]] = "%s" % elem[1]
-      elif event == "start":
-          if root is None:
-              root = elem
-      
-      return context, namespaces[''] if '' in namespaces else namespaces
+      else: # python v2?
+        # Python 2 on Windows opens sys.stdin in text mode, and
+        # binary data that read from it becomes corrupted on \r\n
+        if sys.platform == "win32":
+          import msvcrt
+          msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY) # set sys.stdin to binary mode
+        xml_file = sys.stdin
+
+    context = lxml.etree.iterparse(xml_file, events)
+    context = iter(context)
+    event, elem = next(context)
+    if event == "start-ns":
+      if elem[0] in namespaces and namespaces[elem[0]] != elem[1]:
+        # NOTE: It is perfectly valid to have the same prefix refer
+        #     to different URI namespaces in different parts of the
+        #     document. This exception serves as a reminder that this
+        #     solution is not robust.    Use at your own peril.
+        raise KeyError("Duplicate prefix with different URI found.")
+      namespaces[elem[0]] = "%s" % elem[1]
+    elif event == "start":
+      if root is None:
+        root = elem
+    
+    return context, namespaces[''] if '' in namespaces else namespaces
 
 
   def parse_test(self):
@@ -850,7 +857,10 @@ class Processor(Conductor):
                 categories_element.text = categories_text
 
               if self.arg_output == sys.stdout: # write to STDOUT?
-                print(lxml.etree.tostring(page_element, encoding=DEFAULT_ENCODING).decode())
+                output = lxml.etree.tostring(page_element, encoding=DEFAULT_ENCODING)
+                if PYTHON3:
+                  output = output.decode()
+                print(output)
               else: # write to a FILE
                 lxml.etree.ElementTree(page_element).write(self.arg_output, encoding=DEFAULT_ENCODING)
                 self.arg_output.write(b"\n") # add a line break after each element
