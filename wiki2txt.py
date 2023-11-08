@@ -36,7 +36,7 @@ DEFAULT_ENCODING = 'utf-8'
   # TODO: Optimize code where appropriate to speed up processing / parsing
   # TODO: Redesign REGEX parsing so that it would be able to utilize more CPU cores (use multithreading library)
   # TODO: Review the necessity for unicodedata normalization (it seems unnecessary to normalize unicodes in v3)
-  # TODO: Fix STDIN processing to actually allow piping of input and separate it from the -T option
+  # DONE: Fix STDIN processing to actually allow piping of input and separate it from the -T option
   # TODO: Think about allowing one-shot parsing (to wrap STDIN input in mediawiki like structure) and perhaps do away with the -T option
 
 
@@ -82,7 +82,7 @@ class Conductor:
                       help="produce plain (unformatted) text (DEFAULT)")
     opt_parser.add_option("-s", "--skip",
                       dest="skip", metavar="NUMBER",
-                      help="skip (resume after) NUMBER of articles (and append to files)")
+                      help="skip (resume after) NUMBER of articles (and append to -o FILE)")
     opt_parser.add_option("-q", "--quiet", action="store_false",
                       dest="verbose", default=True,
                       help="stop making noise")
@@ -664,6 +664,8 @@ class Processor(Conductor):
       events = ("start", "start-ns", "end")
       root = None
       namespaces = {}
+      if xml_file == sys.stdin: # input from STDIN?
+        xml_file = xml_file.buffer # work on stdin buffer
       context = lxml.etree.iterparse(xml_file, events)
       context = iter(context)
       event, elem = next(context)
@@ -685,21 +687,16 @@ class Processor(Conductor):
   def parse_test(self):
     """TODO: Temporary method that will be replaced by unit tests in near future."""
 
-    print("INPUT (use CTRL-D in Unix or CTRL-Z in Windows to start parsing):\n")
-    input_data = parser.arg_input.read() # send EOF to signify end of input
+    #print("INPUT (use CTRL-D in Unix or CTRL-Z in Windows to start parsing):\n")
+    input_data = self.arg_input.read() # send EOF to signify end of input
     if sys.version_info < (3, 0):
         input_data = bytes(input_data)
     else:
         input_data = bytes(input_data, 'utf8')
-    input_data = unicodedata.normalize("NFKD", input_data.decode(DEFAULT_ENCODING))
-    #print("\nINPUT (normalized):")
-    #print(repr(input_data))
-    parser.get_wiki_data(input_data)
-    #print("\nOUTPUT (representation):")
-    #print(repr(parser.wiki_data.plain_text))
-    print("\nOUTPUT:")
-    print(parser.wiki_data.plain_text)
-    print("")
+    input_data = unicodedata.normalize("NFKD", input_data.decode(DEFAULT_ENCODING)) # Normal Form KD
+
+    self.get_wiki_data(input_data) # convert data to plaintext
+    sys.stdout.write(self.wiki_data.plain_text) # write to STDOUT
 
 
   def ParseWiki(self):
@@ -707,8 +704,8 @@ class Processor(Conductor):
     
     # getting file size
     if self.arg_input != sys.stdin and self.arg_output != sys.stdout and self.arg_verbose:
-      inputFileSize = self.get_file_size(self.arg_input)
-      oldRet = ("",0)
+      input_file_size = self.get_file_size(self.arg_input)
+      previous_progress = ("",0)
 
     try: # to initialize wiki2xml parser
       context, ns = self.get_etree_and_namespace(self.arg_input)
@@ -732,7 +729,7 @@ class Processor(Conductor):
           # percentage
           if self.arg_input != sys.stdin and self.arg_output != sys.stdout and self.arg_verbose:
             current_file_size = self.arg_input.tell()
-            oldRet = self.print_progress(inputFileSize, current_file_size, oldRet)
+            previous_progress = self.print_progress(input_file_size, current_file_size, previous_progress)
           if event == "end":
             element.clear()
           while element.getprevious() is not None:
@@ -778,7 +775,7 @@ class Processor(Conductor):
         # percentage
         if self.arg_input != sys.stdin and self.arg_output != sys.stdout and self.arg_verbose:
           current_file_size = self.arg_input.tell()
-          oldRet = self.print_progress(inputFileSize, current_file_size, oldRet)
+          previous_progress = self.print_progress(input_file_size, current_file_size, previous_progress)
 
         if element.tag == (ns + "page") and event == "end":
 
@@ -852,7 +849,11 @@ class Processor(Conductor):
                   categories_text += "<category target=\"" + i + "\"/>"
                 categories_element.text = categories_text
 
-              lxml.etree.ElementTree(page_element).write(self.arg_output, encoding=DEFAULT_ENCODING)
+              if self.arg_output == sys.stdout: # write to STDOUT?
+                print(lxml.etree.tostring(page_element, encoding=DEFAULT_ENCODING).decode())
+              else: # write to a FILE
+                lxml.etree.ElementTree(page_element).write(self.arg_output, encoding=DEFAULT_ENCODING)
+                self.arg_output.write(b"\n") # add a line break after each element
 
           # free every page element (otherwise the RAM would overflow eventually)
           element.clear()

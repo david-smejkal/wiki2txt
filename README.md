@@ -42,7 +42,7 @@ Options:
   -o FILE, --output-file=FILE  output parsed articles to FILE otherwise to STDOUT
   -n, --no-text                don't parse text (designed for use with -r -l -c options)
   -t, --text                   produce plain (unformatted) text (DEFAULT)
-  -s NUMBER, --skip=NUMBER     skip (resume after) NUMBER of articles (appends to output files)
+  -s NUMBER, --skip=NUMBER     skip (resume after) NUMBER of articles (append to -o FILE)
   -q, --quiet                  stop making noise
   -R, --references             retain references in text (links and categories)
   -r FILE, --redirects=FILE    outsource redirect articles to the FILE
@@ -97,3 +97,9 @@ $ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2 # 72 GB
 ```shell-session
 (wiki2txt) $ python wiki2txt.py -i enwiki-latest-pages-articles.xml -o clean-data.xml
 ```
+
+### Piping input
+```
+(wiki2txt) $ cat enwiki-latest-pages-articles.xml | python wiki2txt.py > clean-data.xml
+```
+**HINT:** diverting output to a file like this yields slightly faster parsing (`9.9 MB/s`)
