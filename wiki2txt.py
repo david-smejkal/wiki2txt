@@ -12,6 +12,7 @@ import re
 import string
 import optparse
 import locale
+from io import BytesIO
 from io import open # for python 2-3 compatibility
 import unicodedata # for python 2-3 compatibility
   # unicodedata is currently used to normalize unicode and thus minimize differences between python v2 and python v3 output)
@@ -33,6 +34,7 @@ DEFAULT_ENCODING = 'utf-8'
 
 # TODO list:
   # TODO: Break up classes into individual files
+  # DONE: Implement a set of basic functional tests
   # TODO: Cover as much code as possible with unit tests
   # TODO: Optimize code where appropriate to speed up processing / parsing
   # TODO: Redesign REGEX parsing so that it would be able to utilize more CPU cores (use multithreading library)
@@ -754,23 +756,23 @@ class Processor(Conductor):
     # prepare links file
     if self.arg_links_file:
       if self.arg_skip:
-        self.arg_lnk_file = open(self.arg_links_file, "ab")
+        self.arg_lnk_file = self.arg_links_file if type(self.arg_links_file) == BytesIO else open(self.arg_links_file, "ab")
       else:
-        self.arg_lnk_file = open(self.arg_links_file, "wb")
+        self.arg_lnk_file = self.arg_links_file if type(self.arg_links_file) == BytesIO else open(self.arg_links_file, "wb")
 
     # prepare categories file
     if self.arg_categories_file:
       if self.arg_skip:
-        self.arg_cat_file = open(self.arg_categories_file, "ab")
+        self.arg_cat_file = self.arg_categories_file if type(self.arg_categories_file) == BytesIO else open(self.arg_categories_file, "ab")
       else:
-        self.arg_cat_file = open(self.arg_categories_file, "wb")
+        self.arg_cat_file = self.arg_categories_file if type(self.arg_categories_file) == BytesIO else open(self.arg_categories_file, "wb")
 
     # prepare redirects file
     if self.arg_redirects_file:
       if self.arg_skip:
-        self.arg_red_file = open(self.arg_redirects_file, "ab")
+        self.arg_red_file = self.arg_redirects_file if type(self.arg_redirects_file) == BytesIO else open(self.arg_redirects_file, "ab")
       else:
-        self.arg_red_file = open(self.arg_redirects_file, "wb")
+        self.arg_red_file = self.arg_redirects_file if type(self.arg_redirects_file) == BytesIO else open(self.arg_redirects_file, "wb")
 
     for event, element in context:
 
@@ -913,11 +915,11 @@ class Processor(Conductor):
       element.clear()
       while element.getprevious() is not None:
         del element.getparent()[0]
-      if self.arg_links_file:
+      if self.arg_links_file and type(self.arg_lnk_file) != BytesIO:
         self.arg_lnk_file.close()
-      if self.arg_categories_file:
+      if self.arg_categories_file and type(self.arg_cat_file) != BytesIO:
         self.arg_cat_file.close()
-      if self.arg_redirects_file:
+      if self.arg_redirects_file and type(self.arg_red_file) != BytesIO:
         self.arg_red_file.close()
 
 
