@@ -520,12 +520,12 @@ class Processor(Conductor):
     # redirection is handeled befor this method ... in xml parsing
     if self.arg_references:
       if text[:9].upper() == "#REDIRECT":
-        self.wiki_data.plain_text = "<redirect target=\"" + self.wikiRedRE.sub("\g<1>", text) + "\"/>"
+        self.wiki_data.plain_text = "<redirect target=\"" + self.wikiRedRE.sub(r"\g<1>", text) + "\"/>"
         return
 
     if self.arg_redirects_file:
       if text[:9].upper() == "#REDIRECT":
-        self.wiki_data.redirect = self.repair_article_name(self.wikiRedRE.sub("\g<1>", text))
+        self.wiki_data.redirect = self.repair_article_name(self.wikiRedRE.sub(r"\g<1>", text))
         return
 
     ### DELETING
@@ -905,7 +905,7 @@ class Processor(Conductor):
       except:
         raise
         # Unknown error... continue in parsing.
-        sys.stderr.write("\WARNING: Error in parsing, skipping article.\n")
+        sys.stderr.write("WARNING: Error in parsing, skipping article.\n")
         element.clear()
         while element.getprevious() is not None:
           del element.getparent()[0]
