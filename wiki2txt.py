@@ -8,7 +8,7 @@
 # standard libraries
 import sys
 import os
-import re
+# import re
 import string
 import optparse
 import locale
@@ -21,6 +21,9 @@ import unicodedata # for python 2-3 compatibility
 
 # non-standard libraries
 import lxml.etree # pip install lxml
+import regex as re
+  # using regex instead of re in order to access regex timeout to deal with runaway regex during catastrophic backtracking
+  # this happens rarely when parsing a badly formatted page, often a corrupted page that wouldn't even load in a browser
 
 # XML OUTPUT FORMAT
   #<article>
@@ -29,19 +32,22 @@ import lxml.etree # pip install lxml
     #<text>Anarchism is a political philosophy ...</text>
   #</article>
 
+REGEX_TIMEOUT = 30 # seconds
+
 PYTHON3 = sys.version_info >= (3, 0)
 DEFAULT_ENCODING = 'utf-8'
 
 # TODO list:
   # TODO: Break up classes into individual files
   # DONE: Implement a set of basic functional tests
+  # DONE: Fix STDIN processing to actually allow piping of input and separate it from the -T option
   # TODO: Cover as much code as possible with unit tests
   # TODO: Optimize code where appropriate to speed up processing / parsing
+  # TODO: Imlement a better way to handle runnaway regex than REGEX_TIMEOUT (then switch back to standard re library)
   # TODO: Redesign REGEX parsing so that it would be able to utilize more CPU cores (use multithreading library)
-  # TODO: Review the necessity for unicodedata normalization (it seems unnecessary to normalize unicode strings in v3)
-  # DONE: Fix STDIN processing to actually allow piping of input and separate it from the -T option
   # TODO: Drop Python v2 support
-  # TODO: Think about allowing one-shot parsing (to wrap STDIN input in mediawiki like structure) and perhaps do away with the -T option
+  # TODO: Review the necessity for unicodedata normalization (it seems unnecessary to normalize unicode strings in v3)
+  # TODO: Think about allowing wikimedia syntax one-shot parsing (wrap STDIN input in a mediawiki like structure?)
 
 
 ################################################################################
@@ -585,7 +591,7 @@ class Processor(Conductor):
       #with open('last-text2.txt', 'wb') as output: # DEBUG
       #  output.write(text.encode(DEFAULT_ENCODING)) # DEBUG
       # print("DEBUG: before calling re")
-      text = self.wikiOtaRE.sub(self.parse_opened_tag, text) # <-- TODO: Heavy processing, optimize
+      text = self.wikiOtaRE.sub(self.parse_opened_tag, text, timeout=REGEX_TIMEOUT) # <-- TODO: Heavy processing, optimize
       # print("DEBUG: after calling re")
     self.repeat = 1
 
@@ -873,6 +879,13 @@ class Processor(Conductor):
           while element.getprevious() is not None:
             del element.getparent()[0]
 
+      except TimeoutError:
+        sys.stderr.write(f"\nWARNING: Skipping article \"{repaired_title}\". Took longer than {REGEX_TIMEOUT} seconds to parse.\n")
+        element.clear()
+        while element.getprevious() is not None:
+          del element.getparent()[0]
+        continue
+
       except KeyboardInterrupt:
         sys.stderr.write("\nWARNING: Prematurely aborted parsing (not all articles have been processed).\n")
         if self.arg_input != sys.stdin and self.arg_output != sys.stdout:
@@ -905,8 +918,8 @@ class Processor(Conductor):
 
       except:
         raise
-        # Unknown error... continue in parsing.
-        sys.stderr.write("WARNING: Error in parsing, skipping article.\n")
+        # Unknown error... continue parsing.
+        sys.stderr.write(f"\nWARNING: Skipping article \"{repaired_title}\". Unexpected error occured.\n")
         element.clear()
         while element.getprevious() is not None:
           del element.getparent()[0]
