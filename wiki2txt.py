@@ -8,22 +8,17 @@
 # standard libraries
 import sys
 import os
+from io import BytesIO
 # import re
-import string
 import optparse
 import locale
-from io import BytesIO
-from io import open # for python 2-3 compatibility
-import unicodedata # for python 2-3 compatibility
-  # unicodedata is currently used to normalize unicode and thus minimize differences between python v2 and python v3 output)
-  # before normalization the differences were that v2 would not clean up some unicode specific whitespaces
-  # after normalization the differences are miniscule and purely cosmetic 
+import unicodedata
 
 # non-standard libraries
 import lxml.etree # pip install lxml
 import regex as re
   # using regex instead of re in order to access regex timeout to deal with runaway regex during catastrophic backtracking
-  # this happens rarely when parsing a badly formatted page, often a corrupted page that wouldn't even load in a browser
+  # this happens rarely, when parsing a badly formatted page, often a corrupted page that wouldn't even load in a browser
 
 # XML OUTPUT FORMAT
   #<article>
@@ -34,7 +29,6 @@ import regex as re
 
 REGEX_TIMEOUT = 30 # seconds
 
-PYTHON3 = sys.version_info >= (3, 0)
 DEFAULT_ENCODING = 'utf-8'
 
 # TODO list:
@@ -76,7 +70,7 @@ class Conductor:
     """This function is self-explained."""
     opt_parser = optparse.OptionParser(
               usage = "usage: %prog [options]",
-              version = "%prog 0.5.0")
+              version = "%prog 0.6.0")
 
     opt_parser.add_option("-i", "--input-file",
                       dest="input", metavar="FILE",
@@ -672,15 +666,7 @@ class Processor(Conductor):
     root = None
     namespaces = {}
     if xml_file == sys.stdin: # input from STDIN?
-      if PYTHON3: # python v3+?
-        xml_file = xml_file.buffer # work on stdin buffer
-      else: # python v2?
-        # Python 2 on Windows opens sys.stdin in text mode, and
-        # binary data that read from it becomes corrupted on \r\n
-        if sys.platform == "win32":
-          import msvcrt
-          msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY) # set sys.stdin to binary mode
-        xml_file = sys.stdin
+      xml_file = xml_file.buffer # work on stdin buffer
 
     context = lxml.etree.iterparse(xml_file, events)
     context = iter(context)
@@ -704,12 +690,8 @@ class Processor(Conductor):
     """TODO: Temporary method that will be replaced by unit tests in near future."""
 
     #print("INPUT (use CTRL-D in Unix or CTRL-Z in Windows to start parsing):\n")
-    input_data = self.arg_input.read() # send EOF to signify end of input
-    if sys.version_info < (3, 0):
-        input_data = bytes(input_data)
-    else:
-        input_data = bytes(input_data, 'utf8')
-    input_data = unicodedata.normalize("NFKD", input_data.decode(DEFAULT_ENCODING)) # Normal Form KD
+    input_data = bytes(self.arg_input.read(), 'utf8') # send EOF to signify end of input
+    #input_data = unicodedata.normalize("NFKD", input_data.decode(DEFAULT_ENCODING)) # Normal Form KD
 
     self.get_wiki_data(input_data) # convert data to plaintext
     sys.stdout.write(self.wiki_data.plain_text) # write to STDOUT
@@ -808,8 +790,6 @@ class Processor(Conductor):
           title = titles[0]
           id = ids[0]
 
-          wiki = unicodedata.normalize("NFKD", u"".join(texts)) # <-- TODO: Heavy processing, optimize
-
           ##if ref flag was not found
           ##ignore redirected pages (articles), i.e. #REDIRECT or #redirect
           #if (wiki[:9] == "#REDIRECT" or wiki[:9] == "#redirect") and not self.arg_references or :
@@ -817,11 +797,15 @@ class Processor(Conductor):
             #continue
 
           # print("DEBUG: before self.get_wiki_data()")
-          self.get_wiki_data(wiki)
           link_text = None
           category_text = None
           redirect_text = None
           repaired_title = self.repair_article_name(title)
+
+          wiki = unicodedata.normalize("NFKD", u"".join(texts)) # <-- TODO: Heavy processing, optimize
+          #wiki = u"".join(texts)
+
+          self.get_wiki_data(wiki)
 
           if self.arg_links_file:
             link_text = ""
@@ -866,10 +850,7 @@ class Processor(Conductor):
                 categories_element.text = categories_text
 
               if self.arg_output == sys.stdout: # write to STDOUT?
-                output = lxml.etree.tostring(page_element, encoding=DEFAULT_ENCODING)
-                if PYTHON3:
-                  output = output.decode()
-                print(output)
+                print(lxml.etree.tostring(page_element, encoding=DEFAULT_ENCODING).decode())
               else: # write to a FILE
                 lxml.etree.ElementTree(page_element).write(self.arg_output, encoding=DEFAULT_ENCODING)
                 self.arg_output.write(b"\n") # add a line break after each element
