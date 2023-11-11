@@ -12,7 +12,7 @@ Written in Python, utilizes `lxml` SAX (memory efficient) parser and leans heavi
 
 # Installation
 Supported Python versions: `3.4+`<br />
-*NOTICE: Older version `0.5.0` of this script works with Python `2.7+`*<br /><br />
+*NOTICE: Older version `0.5.0` of this script (uo to commit b35f43773a3372470c459ed9574a55b878b85a46 ) works with Python `2.7+`*<br /><br />
 
 [ Optional: Install and configure [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment with `mkproject` ]
 ```bash
