@@ -2,7 +2,7 @@
 A tool to extract plain (unformatted) multilingual text, redirects, links and categories from wikipedia backups.
 Designed to prepare clean training data for AI training / Machine Learning software.<br />
 
-Written in Python, utilizes `lxml` SAX (memory efficient) parser and leans heavily on the powers of the `re` library.<br /><br />
+Written in Python, utilizes `lxml` SAX (memory efficient) parser and leans heavily on the powers of the `regex` library.<br /><br />
 ![wiki2txt demo](https://smejkal.software/img/wiki2txt-demo.gif)
 
 [Wiki XML dumps](https://dumps.wikimedia.org/backup-index-bydb.html):
