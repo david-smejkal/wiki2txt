@@ -19,7 +19,7 @@ Supported Python versions: `3.4+`<br />
 $ mkproject wiki2txt
 ```
 
-Alternatively if you don't have `mkproject` then create the virtual environment manually:
+Alternatively if you don't have `mkproject` then create your virtual environment manually:
 ```bash
 $ virtualenv --python=`which python3` wiki2txt
 $ source ./wiki2txt/bin/activate
