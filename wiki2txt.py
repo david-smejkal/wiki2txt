@@ -38,8 +38,9 @@ DEFAULT_ENCODING = 'utf-8'
   # TODO: Cover as much code as possible with unit tests
   # TODO: Optimize code where appropriate to speed up processing / parsing
   # TODO: Redesign REGEX parsing so that it would be able to utilize more CPU cores (use multithreading library)
-  # TODO: Review the necessity for unicodedata normalization (it seems unnecessary to normalize unicodes in v3)
+  # TODO: Review the necessity for unicodedata normalization (it seems unnecessary to normalize unicode strings in v3)
   # DONE: Fix STDIN processing to actually allow piping of input and separate it from the -T option
+  # TODO: Drop Python v2 support
   # TODO: Think about allowing one-shot parsing (to wrap STDIN input in mediawiki like structure) and perhaps do away with the -T option
 
 
@@ -342,9 +343,9 @@ class Processor(Conductor):
     return ""
 
 
-  def parse_openned_tag(self, match_obj):
+  def parse_opened_tag(self, match_obj):
     """Parse tags. If nested get rid of the deepest element and repeat."""
-    # print("DEBUG: opennedTag")
+    # print("DEBUG: openedTag")
     #return ""
     # match_obj.group(0) text with tags "<p>aa</p>"
     # match_obj.group(1) opening tag "<p>"
@@ -357,10 +358,10 @@ class Processor(Conductor):
     regex = r"(?i)(?:<|(?:&lt;))\s*"
     regex += match_obj.group("tagname")
     regex += r"\s*(?:.*?)(?<!/)(?:>|(?:&gt;))"
-    # print("DEBUG: before parse_openned_tag() re.compile()")
+    # print("DEBUG: before parse_opened_tag() re.compile()")
     ff = re.compile(regex, re.DOTALL)
     ret = ""
-    # print("DEBUG: before parse_openned_tag() ff.findall()")
+    # print("DEBUG: before parse_opened_tag() ff.findall()")
     for i in ff.findall(match_obj.group(3)):
       # print(match_obj.group(3))
       ret += match_obj.group(1)
@@ -576,15 +577,15 @@ class Processor(Conductor):
     text = self.wikiTttRE.sub(self.parse_tag_TT, text)
 
     ### DELETING
-    # openned tags, i.e. <abc>...</(abc)>
-    # print("DEBUG: before parse_openned_tag()")
+    # opened tags, i.e. <abc>...</(abc)>
+    # print("DEBUG: before parse_opened_tag()")
     while self.repeat:
       self.repeat = 0 # if no nested elements then don't repeat
       #print(text)
       #with open('last-text2.txt', 'wb') as output: # DEBUG
       #  output.write(text.encode(DEFAULT_ENCODING)) # DEBUG
       # print("DEBUG: before calling re")
-      text = self.wikiOtaRE.sub(self.parse_openned_tag, text) # <-- TODO: Heavy processing, optimize
+      text = self.wikiOtaRE.sub(self.parse_opened_tag, text) # <-- TODO: Heavy processing, optimize
       # print("DEBUG: after calling re")
     self.repeat = 1
 
