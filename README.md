@@ -1,25 +1,30 @@
 # wiki2txt
-A tool to extract plain (unformatted) multilingual text, redirects, links and categories from wikipedia backups.
-Designed to prepare clean training data for AI training / Machine Learning software.<br />
+
+A tool to extract plain (unformatted) multilingual / language-agnostic text, redirects, links and categories from wikipedia backups.
+Designed to prepare clean training data for AI Training / Machine Learning software.<br />
 
 Written in Python, utilizes `lxml` SAX (memory efficient) parser and leans heavily on the powers of the `regex` library.<br /><br />
 ![wiki2txt demo](https://smejkal.software/img/wiki2txt-demo.gif)
 
 [Wiki XML dumps](https://dumps.wikimedia.org/backup-index-bydb.html):
-- [https://dumps.wikimedia.org/enwiki/](https://dumps.wikimedia.org/enwiki/) (English)
-- [https://dumps.wikimedia.org/ruwiki/](https://dumps.wikimedia.org/ruwiki/) (Russian)
-- [https://dumps.wikimedia.org/zhwiki/](https://dumps.wikimedia.org/zhwiki/) (Chinese)
+
+* <https://dumps.wikimedia.org/enwiki/> (English)
+* <https://dumps.wikimedia.org/ruwiki/> (Russian)
+* <https://dumps.wikimedia.org/zhwiki/> (Chinese)
 
 # Installation
+
 Supported Python versions: `3.4+`<br />
 *NOTICE: Older version `0.5.0` of this script works with Python `2.7+`*<br /><br />
 
-[ Optional: Install and configure [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment with `mkproject` ]
+\[ Optional: Install and configure [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to create your virtual environment with `mkproject` ]
+
 ```bash
 $ mkproject wiki2txt
 ```
 
 Alternatively if you don't have `mkproject` then create your virtual environment manually:
+
 ```bash
 $ virtualenv --python=`which python3` wiki2txt
 $ source ./wiki2txt/bin/activate
@@ -32,6 +37,7 @@ $ source ./wiki2txt/bin/activate
 ```
 
 # Usage
+
 ```csharp
 (wiki2txt) $ python wiki2txt.py --help
 Usage: wiki2txt.py [options]
@@ -53,6 +59,7 @@ Options:
 ```
 
 # Output Format
+
 ```xml
 <article>
   <id>12</id>
@@ -62,8 +69,10 @@ Options:
 ```
 
 # Performance
+
 > Tested using a single core of Intel i7 1.8 GHz processor
 
+`Python v3.13 (lxml v5.3.1)` - Wikidump data processing speed of `9.2 MB/s`<br />
 `Python v3.11 (lxml v4.9.2)` - Wikidump data processing speed of `9.7 MB/s`<br />
 `Python v3.10 (lxml v4.9.2)` - Wikidump data processing speed of `9.2 MB/s`<br />
 `Python v3.9  (lxml v4.6.4)` - Wikidump data processing speed of `7.6 MB/s`<br />
@@ -76,6 +85,7 @@ Based on the above, it should take about 2 hours to process the latest `en` wiki
 # Examples
 
 ## Download => Decompress => Parse
+
 ```console
 (wiki2txt) $ wget -O articles1.xml.bz2 https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles1.xml-p1p41242.bz2 # 254 MB
 (wiki2txt) $ bzip2 --decompress articles1.xml.bz2 # 940 MB
@@ -83,24 +93,31 @@ Based on the above, it should take about 2 hours to process the latest `en` wiki
 ```
 
 ## Download latest complete wikidump
+
 ```csharp
 $ wget https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2 # 19 GB
 ```
+
 **HINT:** add `--continue` parameter if you need to resume the download
 
 ## Decompress
+
 ```console
 $ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2 # 72 GB
 ```
+
 **HINT:** add `-k` parameter if you want to preserve the original archive
 
 ## Parse
+
 ```shell-session
 (wiki2txt) $ python wiki2txt.py -i enwiki-latest-pages-articles.xml -o clean-data.xml
 ```
 
 ### Piping input
+
 ```
 (wiki2txt) $ cat enwiki-latest-pages-articles.xml | python wiki2txt.py > clean-data.xml
 ```
+
 **HINT:** diverting output to a file like this yields slightly faster parsing (`9.9 MB/s`)
