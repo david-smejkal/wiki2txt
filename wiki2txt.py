@@ -14,6 +14,7 @@ from io import BytesIO
 import optparse
 import locale
 import unicodedata
+from multiprocessing import Pool, cpu_count  # Added for multiprocessing
 
 # non-standard libraries
 import lxml.etree  # pip install lxml
@@ -36,16 +37,26 @@ REGEX_TIMEOUT = 30  # seconds
 
 DEFAULT_ENCODING = "utf-8"
 
+MAX_JOBS = (
+    cpu_count()
+)  # might increase above no. of CPUs to keep more tasks in flight to compensate for I/O delays and variable article length
+
+ARTICLES_PER_JOB = 50  # batch size of lxml parsed articles processed per job
+
 # TODO list:
+#   DONE: Implemented a set of basic functional tests
+#   DONE: Dropped Python v2 support
+#   DONE: Fixed STDIN processing to actually allow piping of input and separate it from the -T option
+#   DONE: Redesigned parsing so that it would be able to utilize more CPU cores (now using multiprocessing library)
+#   TODO: Start using tox for running tests (instead of running pytest directly)
 #   TODO: Break up classes into individual files
-#   DONE: Implement a set of basic functional tests
-#   DONE: Fix STDIN processing to actually allow piping of input and separate it from the -T option
-#   TODO: Cover as much code as possible with unit tests
-#   TODO: Optimize code where appropriate to speed up processing / parsing
-#   TODO: Imlement a better way to handle runnaway regex than REGEX_TIMEOUT (then switch back to standard re library)
-#   TODO: Redesign REGEX parsing so that it would be able to utilize more CPU cores (use multithreading library)
-#   TODO: Drop Python v2 support
-#   TODO: Review the necessity for unicodedata normalization (it seems unnecessary to normalize unicode strings in v3)
+#   TODO: Implement a proper logger to simplify debugging
+#   TODO: Implement an option to store parsed output in SQLite DB format
+#   TODO: Profile and optimize code where appropriate to speed up processing / parsing
+#   TODO: Explore an idea to replace standard lxml lib with an lxml lib that has C optimizations
+#   TODO: Implement a better way to handle runnaway regex than REGEX_TIMEOUT (then switch back to the standard re library)
+#   TODO: Cover 100% of code with unit tests
+#   TODO: Review the necessity for unicodedata normalization (it seems unnecessary to normalize unicode strings in Python v3)
 #   TODO: Think about allowing wikimedia syntax one-shot parsing (wrap STDIN input in a mediawiki like structure?)
 
 
@@ -75,7 +86,7 @@ class Conductor:
     def get_options(self):
         """This function is self-explained."""
         opt_parser = optparse.OptionParser(
-            usage="usage: %prog [options]", version="%prog 0.6.0"
+            usage="usage: %prog [options]", version="%prog 0.7.0-beta"
         )
 
         opt_parser.add_option(
@@ -91,6 +102,14 @@ class Conductor:
             dest="output",
             metavar="FILE",
             help="output parsed articles to FILE otherwise to STDOUT",
+        )
+        opt_parser.add_option(  # multiprocessing if jobs > 1
+            "-j",
+            "--jobs",
+            dest="jobs",
+            type="int",
+            default=1,
+            help=f"Number of parallel jobs (1 to {MAX_JOBS}, up to the CPU count). Defaults to 1.",
         )
         opt_parser.add_option(
             "-n",
@@ -162,6 +181,19 @@ class Conductor:
         )
         (options, args) = opt_parser.parse_args()
 
+        # Validate jobs parameter
+        if (
+            not isinstance(options.jobs, int)
+            or options.jobs < 1
+            or options.jobs > MAX_JOBS
+        ):
+            sys.stderr.write(
+                f"\nWARNING: Invalid number of jobs ({options.jobs}). Must be between 1 and {MAX_JOBS} (up to 2x the CPU count). Defaulting to 1.\n"
+            )
+            self.jobs = 1
+        else:
+            self.jobs = options.jobs
+
         self.arg_text = options.text
 
         self.arg_skip = False
@@ -217,10 +249,12 @@ class Conductor:
 
     def get_file_size(self, file):
         """Self explained."""
-        self.arg_input.seek(0, os.SEEK_END)
-        size = self.arg_input.tell()
-        self.arg_input.seek(0, os.SEEK_SET)
-        return size
+        if hasattr(file, "seek"):  # Check if seekable (file handle or BytesIO)
+            file.seek(0, os.SEEK_END)
+            size = file.tell()
+            file.seek(0, os.SEEK_SET)
+            return size
+        return 0  # Return 0 for non-seekable (e.g., stdin)
 
     def print_progress(self, file_size, size, previous_progress):
         """Prints progress to stdout."""
@@ -791,10 +825,8 @@ class Processor(Conductor):
             input_file_size = self.get_file_size(self.arg_input)
             previous_progress = ("", 0)
 
-        try:  # to initialize wiki2xml parser
+        try:
             context, ns = self.get_etree_and_namespace(self.arg_input)
-            # context = lxml.etree.iterparse(self.arg_input, events = ("start", "end"))
-            # context = iter(context)
             event, root = next(context)
         except:
             raise
@@ -802,17 +834,14 @@ class Processor(Conductor):
                 '\nERROR: Bad input file (not a wikidump), try "-T" for testing purposes.\n'
             )
 
-        # setting skip
         count = 0
         if self.arg_skip:
             count = self.arg_skip
 
-        # skipping N number of articles
         if self.arg_skip:
             try:
                 for i in range(count):
                     event, element = next(context)
-                    # percentage
                     if (
                         self.arg_input != sys.stdin
                         and self.arg_output != sys.stdout
@@ -826,144 +855,214 @@ class Processor(Conductor):
                         element.clear()
                     while element.getprevious() is not None:
                         del element.getparent()[0]
-
             except StopIteration:
                 if self.arg_input != sys.stdin and self.arg_output != sys.stdout:
                     sys.stdout.write("\nINFO: Whole wikidump skipped.\n")
                 sys.exit(0)
 
-        # prepare namespace variables (later used identifying elements of the tree)
         nsdict = {"ns": ns}
         ns = "{%s}" % ns
 
-        # prepare links file
+        # Prepare file handles for output
         if self.arg_links_file:
-            if self.arg_skip:
-                self.arg_lnk_file = (
-                    self.arg_links_file
-                    if type(self.arg_links_file) == BytesIO
-                    else open(self.arg_links_file, "ab")
-                )
-            else:
-                self.arg_lnk_file = (
-                    self.arg_links_file
-                    if type(self.arg_links_file) == BytesIO
-                    else open(self.arg_links_file, "wb")
-                )
-
-        # prepare categories file
+            self.arg_lnk_file = (
+                self.arg_links_file
+                if type(self.arg_links_file) == BytesIO
+                else open(self.arg_links_file, "ab" if self.arg_skip else "wb")
+            )
         if self.arg_categories_file:
-            if self.arg_skip:
-                self.arg_cat_file = (
-                    self.arg_categories_file
-                    if type(self.arg_categories_file) == BytesIO
-                    else open(self.arg_categories_file, "ab")
-                )
-            else:
-                self.arg_cat_file = (
-                    self.arg_categories_file
-                    if type(self.arg_categories_file) == BytesIO
-                    else open(self.arg_categories_file, "wb")
-                )
-
-        # prepare redirects file
+            self.arg_cat_file = (
+                self.arg_categories_file
+                if type(self.arg_categories_file) == BytesIO
+                else open(self.arg_categories_file, "ab" if self.arg_skip else "wb")
+            )
         if self.arg_redirects_file:
-            if self.arg_skip:
-                self.arg_red_file = (
-                    self.arg_redirects_file
-                    if type(self.arg_redirects_file) == BytesIO
-                    else open(self.arg_redirects_file, "ab")
-                )
-            else:
-                self.arg_red_file = (
-                    self.arg_redirects_file
-                    if type(self.arg_redirects_file) == BytesIO
-                    else open(self.arg_redirects_file, "wb")
-                )
+            self.arg_red_file = (
+                self.arg_redirects_file
+                if type(self.arg_redirects_file) == BytesIO
+                else open(self.arg_redirects_file, "ab" if self.arg_skip else "wb")
+            )
 
-        for event, element in context:
+        if self.jobs > 1:
+            # Use multiprocessing with streaming
+            with Pool(processes=self.jobs) as pool:
+                article_args = []
+                for event, element in context:
+                    try:
+                        count += 1
+                        if (
+                            self.arg_input != sys.stdin
+                            and self.arg_output != sys.stdout
+                            and self.arg_verbose
+                        ):
+                            current_file_size = self.arg_input.tell()
+                            previous_progress = self.print_progress(
+                                input_file_size, current_file_size, previous_progress
+                            )
 
-            try:
+                        if element.tag == (ns + "page") and event == "end":
+                            titles = element.xpath("ns:title/text()", namespaces=nsdict)
+                            ids = element.xpath("ns:id/text()", namespaces=nsdict)
+                            texts = element.xpath(
+                                "ns:revision/ns:text/text()", namespaces=nsdict
+                            )
 
-                count += 1
+                            if len(titles) != 1 or len(ids) != 1:
+                                continue
 
-                self.wiki_data.__init__()
-                # percentage
-                if (
-                    self.arg_input != sys.stdin
-                    and self.arg_output != sys.stdout
-                    and self.arg_verbose
-                ):
-                    current_file_size = self.arg_input.tell()
-                    previous_progress = self.print_progress(
-                        input_file_size, current_file_size, previous_progress
-                    )
+                            title = titles[0]
+                            id = ids[0]
+                            wiki = unicodedata.normalize("NFKD", "".join(texts))
+                            article_args.append(
+                                (
+                                    title,
+                                    id,
+                                    wiki,
+                                    self.arg_text,
+                                    self.arg_links_file,
+                                    self.arg_categories_file,
+                                    self.arg_redirects_file,
+                                    self.arg_references,
+                                )
+                            )
 
-                if element.tag == (ns + "page") and event == "end":
+                            element.clear()
+                            while element.getprevious() is not None:
+                                del element.getparent()[0]
 
-                    titles = element.xpath("ns:title/text()", namespaces=nsdict)
-                    ids = element.xpath("ns:id/text()", namespaces=nsdict)
-                    texts = element.xpath(
-                        "ns:revision/ns:text/text()", namespaces=nsdict
-                    )
+                        # Process articles in chunks to limit memory usage
+                        if (
+                            len(article_args) >= self.jobs * ARTICLES_PER_JOB
+                        ):  # Process in small batches
+                            results = pool.imap(process_article, article_args)
+                            for (
+                                output,
+                                link_text,
+                                category_text,
+                                redirect_text,
+                            ) in results:
+                                if link_text and self.arg_lnk_file:
+                                    self.arg_lnk_file.write(
+                                        link_text.encode(DEFAULT_ENCODING)
+                                    )
+                                    # self.arg_lnk_file.flush()
+                                if category_text and self.arg_cat_file:
+                                    self.arg_cat_file.write(
+                                        category_text.encode(DEFAULT_ENCODING)
+                                    )
+                                    # self.arg_cat_file.flush()
+                                if redirect_text and self.arg_red_file:
+                                    self.arg_red_file.write(
+                                        redirect_text.encode(DEFAULT_ENCODING)
+                                    )
+                                    # self.arg_red_file.flush()
+                                if output:
+                                    if self.arg_output == sys.stdout:
+                                        print(output.decode())
+                                    elif self.arg_output is not None:
+                                        self.arg_output.write(output)
+                                        # self.arg_output.flush()  # Ensure immediate write
+                            article_args = []
 
-                    if len(titles) != 1:
+                    except TimeoutError:
+                        sys.stderr.write(
+                            f"\nWARNING: Skipping article. Took longer than {REGEX_TIMEOUT} seconds to parse.\n"
+                        )
+                        continue
+                    except KeyboardInterrupt:
+                        sys.stderr.write("\nWARNING: Prematurely aborted parsing.\n")
+                        break
+                    except IOError:
+                        sys.stderr.write("\nERROR: I/O error.\n")
+                        break
+                    except:
+                        import traceback
+
+                        sys.stderr.write(
+                            f"\nWARNING: Skipping article due to unexpected error: {traceback.format_exc()}\n"
+                        )
                         continue
 
-                    if len(ids) != 1:
-                        continue
+                # Process remaining articles
+                if article_args:
+                    results = pool.imap(process_article, article_args)
+                    for output, link_text, category_text, redirect_text in results:
+                        if link_text and self.arg_lnk_file:
+                            self.arg_lnk_file.write(link_text.encode(DEFAULT_ENCODING))
+                            # self.arg_lnk_file.flush()
+                        if category_text and self.arg_cat_file:
+                            self.arg_cat_file.write(
+                                category_text.encode(DEFAULT_ENCODING)
+                            )
+                            # self.arg_cat_file.flush()
+                        if redirect_text and self.arg_red_file:
+                            self.arg_red_file.write(
+                                redirect_text.encode(DEFAULT_ENCODING)
+                            )
+                            # self.arg_red_file.flush()
+                        if output:
+                            if self.arg_output == sys.stdout:
+                                print(output.decode())
+                            elif self.arg_output is not None:
+                                self.arg_output.write(output)
+                                # self.arg_output.flush()  # Ensure immediate write
 
-                    title = titles[0]
-                    id = ids[0]
+        else:
+            # Single-threaded processing (unchanged)
+            for event, element in context:
+                try:
+                    count += 1
+                    if (
+                        self.arg_input != sys.stdin
+                        and self.arg_output != sys.stdout
+                        and self.arg_verbose
+                    ):
+                        current_file_size = self.arg_input.tell()
+                        previous_progress = self.print_progress(
+                            input_file_size, current_file_size, previous_progress
+                        )
 
-                    ##if ref flag was not found
-                    ##ignore redirected pages (articles), i.e. #REDIRECT or #redirect
-                    # if (wiki[:9] == "#REDIRECT" or wiki[:9] == "#redirect") and not self.arg_references or :
-                    # element.clear()
-                    # continue
+                    if element.tag == (ns + "page") and event == "end":
+                        titles = element.xpath("ns:title/text()", namespaces=nsdict)
+                        ids = element.xpath("ns:id/text()", namespaces=nsdict)
+                        texts = element.xpath(
+                            "ns:revision/ns:text/text()", namespaces=nsdict
+                        )
 
-                    # print("DEBUG: before self.get_wiki_data()")
-                    link_text = None
-                    category_text = None
-                    redirect_text = None
-                    repaired_title = self.repair_article_name(title)
+                        if len(titles) != 1 or len(ids) != 1:
+                            continue
 
-                    wiki = unicodedata.normalize(
-                        "NFKD", "".join(texts)
-                    )  # <-- TODO: Heavy processing, optimize
-                    # wiki = u"".join(texts)
+                        title = titles[0]
+                        id = ids[0]
+                        wiki = unicodedata.normalize("NFKD", "".join(texts))
 
-                    self.get_wiki_data(wiki)
+                        repaired_title = self.repair_article_name(title)
+                        self.wiki_data.__init__()
+                        self.get_wiki_data(wiki)
 
-                    if self.arg_links_file:
-                        link_text = ""
-                        for i in self.wiki_data.links:
-                            link_text += repaired_title + "\t" + i + "\n"
-
-                    if self.arg_categories_file:
-                        category_text = ""
-                        for i in self.wiki_data.categories:
-                            category_text += repaired_title + "\t" + i + "\n"
-
-                    if self.arg_redirects_file:
-                        if self.wiki_data.redirect is not None:
+                        if self.arg_links_file:
+                            link_text = "".join(
+                                repaired_title + "\t" + i + "\n"
+                                for i in self.wiki_data.links
+                            )
+                            self.arg_lnk_file.write(link_text.encode(DEFAULT_ENCODING))
+                        if self.arg_categories_file:
+                            category_text = "".join(
+                                repaired_title + "\t" + i + "\n"
+                                for i in self.wiki_data.categories
+                            )
+                            self.arg_cat_file.write(
+                                category_text.encode(DEFAULT_ENCODING)
+                            )
+                        if self.arg_redirects_file and self.wiki_data.redirect:
                             redirect_text = (
                                 repaired_title + "\t" + self.wiki_data.redirect + "\n"
                             )
+                            self.arg_red_file.write(
+                                redirect_text.encode(DEFAULT_ENCODING)
+                            )
 
-                    # write to *.edg files
-                    if link_text is not None:
-                        self.arg_lnk_file.write(link_text.encode(DEFAULT_ENCODING))
-                    if category_text is not None:
-                        self.arg_cat_file.write(category_text.encode(DEFAULT_ENCODING))
-                    if redirect_text is not None:
-                        self.arg_red_file.write(redirect_text.encode(DEFAULT_ENCODING))
-
-                    # write text
-                    if self.wiki_data.plain_text is not None:
-
-                        # xml output
-                        if self.arg_text:
+                        if self.wiki_data.plain_text and self.arg_text:
                             page_element = lxml.etree.Element("article")
                             id_element = lxml.etree.SubElement(page_element, "id")
                             id_element.text = id
@@ -971,112 +1070,128 @@ class Processor(Conductor):
                             title_element.text = title
                             text_element = lxml.etree.SubElement(page_element, "text")
                             text_element.text = self.wiki_data.plain_text
-                            if self.arg_references:
+                            if self.arg_references and self.wiki_data.categories:
                                 categories_element = lxml.etree.SubElement(
                                     page_element, "categories"
                                 )
-                                categories_text = ""
-                                for i in self.wiki_data.categories:
-                                    categories_text += '<category target="' + i + '"/>'
+                                categories_text = "".join(
+                                    f'<category target="{i}"/>'
+                                    for i in self.wiki_data.categories
+                                )
                                 categories_element.text = categories_text
-
-                            if self.arg_output == sys.stdout:  # write to STDOUT?
-                                print(
-                                    lxml.etree.tostring(
-                                        page_element, encoding=DEFAULT_ENCODING
-                                    ).decode()
+                            output = (
+                                lxml.etree.tostring(
+                                    page_element, encoding=DEFAULT_ENCODING
                                 )
-                            else:  # write to a FILE
-                                lxml.etree.ElementTree(page_element).write(
-                                    self.arg_output, encoding=DEFAULT_ENCODING
-                                )
-                                self.arg_output.write(
-                                    b"\n"
-                                )  # add a line break after each element
+                                + b"\n"
+                            )
+                            if self.arg_output == sys.stdout:
+                                print(output.decode())
+                            else:
+                                self.arg_output.write(output)
 
-                    # free every page element (otherwise the RAM would overflow eventually)
-                    element.clear()
-                    while element.getprevious() is not None:
-                        del element.getparent()[0]
-
-            except TimeoutError:
-                sys.stderr.write(
-                    f'\nWARNING: Skipping article "{repaired_title}". Took longer than {REGEX_TIMEOUT} seconds to parse.\n'
-                )
-                element.clear()
-                while element.getprevious() is not None:
-                    del element.getparent()[0]
-                continue
-
-            except KeyboardInterrupt:
-                sys.stderr.write(
-                    "\nWARNING: Prematurely aborted parsing (not all articles have been processed).\n"
-                )
-                if self.arg_input != sys.stdin and self.arg_output != sys.stdout:
+                        element.clear()
+                        while element.getprevious() is not None:
+                            del element.getparent()[0]
+                except TimeoutError:
                     sys.stderr.write(
-                        'WARNING: To resume parsing run the same command again with additional "-s '
-                        + str(count)
-                        + '" option.\n'
+                        f'\nWARNING: Skipping article "{repaired_title}". Took longer than {REGEX_TIMEOUT} seconds.\n'
                     )
-                element.clear()
-                while element.getprevious() is not None:
-                    del element.getparent()[0]
-                if self.arg_links_file:
-                    self.arg_lnk_file.close()
-                if self.arg_categories_file:
-                    self.arg_cat_file.close()
-                if self.arg_redirects_file:
-                    self.arg_red_file.close()
-                break
-
-            except IOError:
-                sys.stderr.write(
-                    "\nERROR: Input/Output filesystem related problem (File too large, No such file or directory, etc.).\n"
-                )
-                if self.arg_input != sys.stdin and self.arg_output != sys.stdout:
+                    continue
+                except KeyboardInterrupt:
+                    sys.stderr.write("\nWARNING: Prematurely aborted parsing.\n")
+                    break
+                except IOError:
+                    sys.stderr.write("\nERROR: I/O error.\n")
+                    break
+                except:
                     sys.stderr.write(
-                        'WARNING: To resume parsing run the same command again with additional "-s '
-                        + str(count)
-                        + '" option.\n'
+                        f'\nWARNING: Skipping article "{repaired_title}". Unexpected error.\n'
                     )
-                element.clear()
-                while element.getprevious() is not None:
-                    del element.getparent()[0]
-                if self.arg_links_file:
-                    self.arg_lnk_file.close()
-                if self.arg_categories_file:
-                    self.arg_cat_file.close()
-                if self.arg_redirects_file:
-                    self.arg_red_file.close()
-                break
+                    continue
 
-            except:
-                raise
-                # Unknown error... continue parsing.
-                sys.stderr.write(
-                    f'\nWARNING: Skipping article "{repaired_title}". Unexpected error occured.\n'
-                )
-                element.clear()
-                while element.getprevious() is not None:
-                    del element.getparent()[0]
-                continue
-
-        else:
-            element.clear()
-            while element.getprevious() is not None:
-                del element.getparent()[0]
-            if self.arg_links_file and type(self.arg_lnk_file) != BytesIO:
-                self.arg_lnk_file.close()
-            if self.arg_categories_file and type(self.arg_cat_file) != BytesIO:
-                self.arg_cat_file.close()
-            if self.arg_redirects_file and type(self.arg_red_file) != BytesIO:
-                self.arg_red_file.close()
+        # Cleanup
+        if self.arg_links_file and type(self.arg_lnk_file) != BytesIO:
+            self.arg_lnk_file.close()
+        if self.arg_categories_file and type(self.arg_cat_file) != BytesIO:
+            self.arg_cat_file.close()
+        if self.arg_redirects_file and type(self.arg_red_file) != BytesIO:
+            self.arg_red_file.close()
 
 
 ################################################################################
 # --------------------------------</CLASSES>---------------------------------- #
 ################################################################################
 
+
+################################################################################
+# --------------------------------<MULTIPROCESSING>--------------------------- #
+################################################################################
+
+
+def process_article(args):
+    """
+    Process a single article and return its output.
+    Deliberately declared outside of the processor as a standalone function (not a method) to avoid pickling the Processor instance.
+    """
+    (
+        title,
+        id,
+        wiki,
+        arg_text,
+        arg_links_file,
+        arg_categories_file,
+        arg_redirects_file,
+        arg_references,
+    ) = args
+    processor = Processor()  # Create a new instance for each process
+    processor.arg_text = arg_text
+    processor.arg_links_file = arg_links_file
+    processor.arg_categories_file = arg_categories_file
+    processor.arg_redirects_file = arg_redirects_file
+    processor.arg_references = arg_references
+
+    repaired_title = processor.repair_article_name(title)
+    processor.get_wiki_data(wiki)  # Populates processor.wiki_data
+
+    link_text = None
+    category_text = None
+    redirect_text = None
+    output = None
+
+    if processor.arg_links_file and processor.wiki_data.links:
+        link_text = "".join(
+            repaired_title + "\t" + i + "\n" for i in processor.wiki_data.links
+        )
+    if processor.arg_categories_file and processor.wiki_data.categories:
+        category_text = "".join(
+            repaired_title + "\t" + i + "\n" for i in processor.wiki_data.categories
+        )
+    if processor.arg_redirects_file and processor.wiki_data.redirect:
+        redirect_text = repaired_title + "\t" + processor.wiki_data.redirect + "\n"
+
+    if processor.wiki_data.plain_text and processor.arg_text:
+        page_element = lxml.etree.Element("article")
+        id_element = lxml.etree.SubElement(page_element, "id")
+        id_element.text = id
+        title_element = lxml.etree.SubElement(page_element, "title")
+        title_element.text = title
+        text_element = lxml.etree.SubElement(page_element, "text")
+        text_element.text = processor.wiki_data.plain_text
+        if processor.arg_references and processor.wiki_data.categories:
+            categories_element = lxml.etree.SubElement(page_element, "categories")
+            categories_text = "".join(
+                f'<category target="{i}"/>' for i in processor.wiki_data.categories
+            )
+            categories_element.text = categories_text
+        output = lxml.etree.tostring(page_element, encoding=DEFAULT_ENCODING) + b"\n"
+
+    return output, link_text, category_text, redirect_text
+
+
+################################################################################
+# --------------------------------</MULTIPROCESSING>-------------------------- #
+################################################################################
 
 ################################################################################
 # --------------------------------<MAIN>-------------------------------------- #
@@ -1106,6 +1221,12 @@ if __name__ == "__main__":
             sys.stdout.write(
                 "\nINFO: Executed with options that didn't result in any parsed output. Try to use some other option combination.\n"
             )
+
+    # Clean up file handle for single-threaded case
+    if processor.jobs == 1 and processor.arg_input != sys.stdin:
+        processor.arg_input.close()
+    if processor.arg_output != sys.stdout and processor.arg_output is not None:
+        processor.arg_output.close()
 
     del processor  # clean-up
 

@@ -47,6 +47,7 @@ Options:
   -h, --help                   show this help message and exit
   -i FILE, --input-file=FILE   take xml input from FILE otherwise from STDIN
   -o FILE, --output-file=FILE  output parsed articles to FILE otherwise to STDOUT
+  -j JOBS, --jobs=JOBS         Number of parallel JOBS (1 to 8, up to the CPU count).
   -n, --no-text                don't parse text (designed for use with -r -l -c options)
   -t, --text                   produce plain (unformatted) text (DEFAULT)
   -s NUMBER, --skip=NUMBER     skip (resume after) NUMBER of articles (append to -o FILE)
@@ -70,17 +71,21 @@ Options:
 
 # Performance
 
-> Tested using a single core of Intel i7 1.8 GHz processor
+> Tested using a single process running on one core of Intel i7 1.8 GHz processor
 
-`Python v3.13 (lxml v5.3.1)` - Wikidump data processing speed of `9.2 MB/s`<br />
-`Python v3.11 (lxml v4.9.2)` - Wikidump data processing speed of `9.7 MB/s`<br />
-`Python v3.10 (lxml v4.9.2)` - Wikidump data processing speed of `9.2 MB/s`<br />
-`Python v3.9  (lxml v4.6.4)` - Wikidump data processing speed of `7.6 MB/s`<br />
-`Python v2.7  (lxml v4.6.4)` - Wikidump data processing speed of `5.2 MB/s`<br />
+`Python v3.11 (lxml v4.9.2)` - Wikidump processing speed of `9.7 MB/s`<br />
+`Python v3.10 (lxml v4.9.2)` - Wikidump processing speed of `9.2 MB/s`<br />
+`Python v3.9  (lxml v4.6.4)` - Wikidump processing speed of `7.6 MB/s`<br />
+`Python v2.7  (lxml v4.6.4)` - Wikidump processing speed of `5.2 MB/s`<br />
 *NOTICE: Parsing speed usually improves with newer versions of Python and lxml library.*<br />
 *e.g. parsing with python `v3.11` is about 86% faster than with `v2.7`.* <br />
 
-Based on the above, it should take about 2 hours to process the latest `en` wikidump (72 GB of decompressed data).
+> Tested by utilizing multiple cores of Intel i7 1.8 GHz () processor
+
+`wiki2txt v0.7.0-beta using --job=8, Python v3.13 (lxml v5.3.1)` - Wikidump processing speed of `18.2 MB/s`<br />
+
+Based on the above, with one job (default parsing) it should take about 2 hours to process the latest `en` wikidump (72 GB of decompressed data).
+Utilizing multiprocessing with --job=8 in the latest beta version (current master) doubles the parsing speed.
 
 # Examples
 
