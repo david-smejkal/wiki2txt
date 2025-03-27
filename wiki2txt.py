@@ -48,7 +48,7 @@ ARTICLES_PER_JOB = 50  # batch size of lxml parsed articles processed per job
 #   DONE: Dropped Python v2 support
 #   DONE: Fixed STDIN processing to actually allow piping of input and separate it from the -T option
 #   DONE: Redesigned parsing so that it would be able to utilize more CPU cores (now using multiprocessing library)
-#   TODO: Start using tox for running tests (instead of running pytest directly)
+#   DONE: Start using tox for running tests (instead of running pytest directly)
 #   TODO: Break up classes into individual files
 #   TODO: Implement a proper logger to simplify debugging
 #   TODO: Implement an option to store parsed output in SQLite DB format
