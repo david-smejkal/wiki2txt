@@ -85,7 +85,7 @@ Options:
 `wiki2txt v0.7.0-beta using --job=8, Python v3.13 (lxml v5.3.1)` - Wikidump processing speed of `18.2 MB/s`<br />
 
 Based on the above, with one job (default parsing) it should take about 2 hours to process the latest `en` wikidump (72 GB of decompressed data).
-Utilizing multiprocessing with --job=8 in the latest beta version (current master) doubles the parsing speed.
+Utilizing multiprocessing with `--job=8` in the latest beta version (current master) doubles the parsing speed.
 
 # Examples
 
@@ -119,10 +119,22 @@ $ bzip2 --decompress enwiki-latest-pages-articles.xml.bz2 # 72 GB
 (wiki2txt) $ python wiki2txt.py -i enwiki-latest-pages-articles.xml -o clean-data.xml
 ```
 
+### Utilize multiprocessing
+
+```shell-session
+(wiki2txt) $ python wiki2txt.py -j 2 -i enwiki-latest-pages-articles.xml -o clean-data.xml
+```
+
 ### Piping input
 
 ```
 (wiki2txt) $ cat enwiki-latest-pages-articles.xml | python wiki2txt.py > clean-data.xml
 ```
 
-**HINT:** diverting output to a file like this yields slightly faster parsing (`9.9 MB/s`)
+### Piping input + multiprocessing
+
+```
+(wiki2txt) $ cat enwiki-latest-pages-articles.xml | python wiki2txt.py --job=8 > clean-data.xml
+```
+
+**HINT:** diverting output to a file like this yields slightly faster parsing.
