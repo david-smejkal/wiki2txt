@@ -1,3 +1,4 @@
 lxml
 regex
 pytest
+tox
