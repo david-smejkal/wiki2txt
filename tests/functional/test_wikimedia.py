@@ -1,6 +1,6 @@
 import pytest
 
-import wiki2txt
+from wiki2txt.processor import Processor
 from io import BytesIO
 
 
@@ -95,7 +95,7 @@ def test_wikimedia_parsing(
     expected_categories_output,
     jobs,  # Added jobs parameter
 ):
-    processor = wiki2txt.Processor()
+    processor = Processor()
     processor.get_options()
 
     # alter parameters of processor to read test input and capture the output
@@ -129,4 +129,5 @@ def test_wikimedia_parsing(
                 )  ## test categories output
 
     # Clean up input file handle
-    processor.arg_input.close()  # Explicitly close since it’s always a file handle
+    # processor.arg_input.close()  # Explicitly close since it’s always a file handle
+    del processor
