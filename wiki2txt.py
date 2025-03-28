@@ -26,7 +26,7 @@ from wiki2txt.processor import Processor
 #   DONE: Start using tox for running tests (instead of running pytest directly)
 #   DONE: Separated classes into individual files
 #   TODO: Implement a proper logger to simplify debugging
-#   TODO: Implement an option to store parsed output in SQLite DB format instead of just a in a bare txt output
+#   TODO: Implement a parameter to insert parsed data in an SQLite DB
 #   TODO: Profile and optimize code where appropriate to speed up processing / parsing
 
 # TODO list for v1.0.1:
