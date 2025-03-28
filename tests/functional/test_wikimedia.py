@@ -116,17 +116,17 @@ def test_wikimedia_parsing(
             with open(expected_redirects_output, "rb") as e_r_o:
                 assert (
                     processor.arg_redirects_file.getvalue() == e_r_o.read()
-                )  ## test redirects output
+                )  # test redirects output
         if processor.arg_links_file:  # parsing out links?
             with open(expected_links_output, "rb") as e_l_o:
                 assert (
                     processor.arg_links_file.getvalue() == e_l_o.read()
-                )  ## test links output
+                )  # test links output
         if processor.arg_categories_file:  # parsing out categories?
             with open(expected_categories_output, "rb") as e_c_o:
                 assert (
                     processor.arg_categories_file.getvalue() == e_c_o.read()
-                )  ## test categories output
+                )  # test categories output
 
     # Clean up input file handle
     # processor.arg_input.close()  # Explicitly close since it’s always a file handle

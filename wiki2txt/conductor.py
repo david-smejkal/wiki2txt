@@ -128,9 +128,9 @@ class Conductor:
 
         self.arg_skip = False
         try:
-            if options.skip != None:
+            if options.skip is not None:
                 self.arg_skip = int(options.skip)
-        except:
+        except Exception:
             sys.stderr.write("\nWARNING: Skip argument not integer (not skipping).\n")
             self.arg_skip = False
 
@@ -140,7 +140,7 @@ class Conductor:
 
         self.arg_references = options.references
 
-        if options.input != None:
+        if options.input is not None:
             self.arg_input_name = options.input
             self.arg_input = open(options.input, "rb")
         else:
@@ -148,7 +148,7 @@ class Conductor:
             self.arg_input_name = "stdin"
             self.arg_input = sys.stdin
 
-        if options.output != None:
+        if options.output is not None:
             if self.arg_text:
                 self.arg_output_name = options.output
                 if self.arg_skip:

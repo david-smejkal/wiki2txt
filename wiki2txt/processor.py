@@ -102,8 +102,8 @@ class Processor(Conductor):
         """Returns html-ascii-decimal-character's unicode representation."""
         # print "MATCH", match_obj.group(0)
         try:
-            ret = unichr(int(match_obj.group(0)[2:-1]))
-        except:
+            ret = chr(int(match_obj.group(0)[2:-1]))
+        except Exception:
             return ""
         return ret
 
@@ -575,7 +575,7 @@ class Processor(Conductor):
         try:
             context, ns = self.get_etree_and_namespace(self.arg_input)
             event, root = next(context)
-        except:
+        except Exception:
             raise
             sys.stderr.write(
                 '\nERROR: Bad input file (not a wikidump), try "-T" for testing purposes.\n'
@@ -614,19 +614,19 @@ class Processor(Conductor):
         if self.arg_links_file:
             self.arg_lnk_file = (
                 self.arg_links_file
-                if type(self.arg_links_file) == BytesIO
+                if isinstance(self.arg_links_file, BytesIO)
                 else open(self.arg_links_file, "ab" if self.arg_skip else "wb")
             )
         if self.arg_categories_file:
             self.arg_cat_file = (
                 self.arg_categories_file
-                if type(self.arg_categories_file) == BytesIO
+                if isinstance(self.arg_categories_file, BytesIO)
                 else open(self.arg_categories_file, "ab" if self.arg_skip else "wb")
             )
         if self.arg_redirects_file:
             self.arg_red_file = (
                 self.arg_redirects_file
-                if type(self.arg_redirects_file) == BytesIO
+                if isinstance(self.arg_redirects_file, BytesIO)
                 else open(self.arg_redirects_file, "ab" if self.arg_skip else "wb")
             )
 
@@ -759,7 +759,7 @@ class Processor(Conductor):
                             # Silently handle SystemExit from signal handler
                             interrupted = True
                             break
-                        except:
+                        except Exception:
                             import traceback
 
                             sys.stderr.write(
@@ -913,7 +913,7 @@ class Processor(Conductor):
                 except IOError:
                     sys.stderr.write("\nERROR: I/O error.\n")
                     break
-                except:
+                except Exception:
                     sys.stderr.write(
                         f'\nWARNING: Skipping article "{repaired_title}". Unexpected error.\n'
                     )
