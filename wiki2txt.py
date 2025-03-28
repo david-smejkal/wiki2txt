@@ -8,12 +8,8 @@
 # standard libraries
 import sys
 
-# non-standard libraries
-import lxml.etree  # pip install lxml
-
 # local imports
-from wiki2txt.conductor import MAX_JOBS
-from wiki2txt.processor import Processor, process_article
+from wiki2txt.processor import Processor
 
 # XML OUTPUT FORMAT
 # <article>
@@ -66,7 +62,7 @@ if __name__ == "__main__":
     else:  # Options misued? / No output expected to be produced?
         if processor.arg_verbose:
             sys.stdout.write(
-                "\nINFO: Executed with options that didn't result in any parsed output. Try to use some other option combination.\n"
+                "\nINFO: Unsupported option combination. Nothing parsed.\n"
             )
 
     # TODO: Consider moving this out to Processor __del__ method
