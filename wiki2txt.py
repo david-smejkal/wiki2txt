@@ -65,12 +65,6 @@ if __name__ == "__main__":
                 "\nINFO: Unsupported option combination. Nothing parsed.\n"
             )
 
-    # TODO: Consider moving this out to Processor __del__ method
-    # if processor.arg_input != sys.stdin and processor.arg_input is not None:
-    #     processor.arg_input.close()
-    # if processor.arg_output != sys.stdout and processor.arg_output is not None:
-    #     processor.arg_output.close()
-
     del processor  # clean-up
 
 ################################################################################

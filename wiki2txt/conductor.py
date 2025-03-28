@@ -16,7 +16,7 @@ class Conductor:
     def get_options(self):
         """This function is self-explained."""
         opt_parser = optparse.OptionParser(
-            usage="usage: %prog [options]", version="%prog 0.7.0-beta"
+            usage="usage: %prog [options]", version="%prog 0.7.0"
         )
 
         opt_parser.add_option(
