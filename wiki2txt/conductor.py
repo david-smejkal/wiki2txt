@@ -191,12 +191,15 @@ class Conductor:
         progress_percentage = "%.2f" % (float(size) / file_size * 100)
 
         if previous_progress[0] != progress_percentage:
-
             output = "%s MB  of  %s MB" % (
                 locale.format_string("%0.2f", (float(size) / 1000000), True),
                 locale.format_string("%d", (file_size / 1000000), True),
             )
             output += " (" + progress_percentage + " %)"
+
+            # Add newline only at 100% completion
+            if progress_percentage == "100.00":
+                output += "\n"
 
             for i in range(previous_progress[1]):
                 sys.stdout.write("\b")
