@@ -1,5 +1,6 @@
 # standard libraries
 import sys
+import signal
 from io import BytesIO
 import unicodedata
 from multiprocessing import Pool
@@ -629,129 +630,191 @@ class Processor(Conductor):
                 else open(self.arg_redirects_file, "ab" if self.arg_skip else "wb")
             )
 
-        if self.jobs > 1:
+        if self.jobs > 1:  # Multiprocessing?
             # Use multiprocessing with streaming
-            with Pool(processes=self.jobs) as pool:
-                article_args = []
-                for event, element in context:
-                    try:
-                        count += 1
-                        if (
-                            self.arg_input != sys.stdin
-                            and self.arg_output != sys.stdout
-                            and self.arg_verbose
-                        ):
-                            current_file_size = self.arg_input.tell()
-                            previous_progress = self.print_progress(
-                                input_file_size, current_file_size, previous_progress
-                            )
+            original_sigint_handler = signal.getsignal(signal.SIGINT)
+            pool = None
+            interrupted = False
 
-                        if element.tag == (ns + "page") and event == "end":
-                            titles = element.xpath("ns:title/text()", namespaces=nsdict)
-                            ids = element.xpath("ns:id/text()", namespaces=nsdict)
-                            texts = element.xpath(
-                                "ns:revision/ns:text/text()", namespaces=nsdict
-                            )
+            def signal_handler(sig, frame):
+                nonlocal interrupted, pool
+                if pool is not None:
+                    pool.terminate()  # Forcefully stop all workers
+                    pool.close()
+                    pool.join()  # Ensure all processes are cleaned up
+                interrupted = True
+                sys.stderr.write("\nINFO: Interrupted by user, exiting cleanly.\n")
+                sys.exit(1)
 
-                            if len(titles) != 1 or len(ids) != 1:
-                                continue
+            # Only set handler in main process
+            if not hasattr(self, "_signal_set"):  # Avoid re-setting in workers
+                signal.signal(signal.SIGINT, signal_handler)
+                self._signal_set = True
 
-                            title = titles[0]
-                            id = ids[0]
-                            wiki = unicodedata.normalize("NFKD", "".join(texts))
-                            article_args.append(
-                                (
-                                    title,
-                                    id,
-                                    wiki,
-                                    self.arg_text,
-                                    self.arg_links_file,
-                                    self.arg_categories_file,
-                                    self.arg_redirects_file,
-                                    self.arg_references,
+            # Block SIGINT in worker processes
+            def init_pool():
+                signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+            try:
+                with Pool(processes=self.jobs, initializer=init_pool) as pool:
+                    article_args = []
+                    for event, element in context:
+                        if interrupted:
+                            break  # Stop processing if interrupted
+                        try:
+                            count += 1
+                            if (
+                                self.arg_input != sys.stdin
+                                and self.arg_output != sys.stdout
+                                and self.arg_verbose
+                            ):
+                                current_file_size = self.arg_input.tell()
+                                previous_progress = self.print_progress(
+                                    input_file_size,
+                                    current_file_size,
+                                    previous_progress,
                                 )
-                            )
 
-                            element.clear()
-                            while element.getprevious() is not None:
-                                del element.getparent()[0]
+                            if element.tag == (ns + "page") and event == "end":
+                                titles = element.xpath(
+                                    "ns:title/text()", namespaces=nsdict
+                                )
+                                ids = element.xpath("ns:id/text()", namespaces=nsdict)
+                                texts = element.xpath(
+                                    "ns:revision/ns:text/text()", namespaces=nsdict
+                                )
 
-                        # Process articles in chunks to limit memory usage
-                        if (
-                            len(article_args) >= self.jobs * ARTICLES_PER_JOB
-                        ):  # Process in small batches
-                            results = pool.imap(process_article, article_args)
-                            for (
-                                output,
-                                link_text,
-                                category_text,
-                                redirect_text,
-                            ) in results:
-                                if link_text and self.arg_lnk_file:
-                                    self.arg_lnk_file.write(
-                                        link_text.encode(DEFAULT_ENCODING)
+                                if len(titles) != 1 or len(ids) != 1:
+                                    continue
+
+                                title = titles[0]
+                                id = ids[0]
+                                wiki = unicodedata.normalize("NFKD", "".join(texts))
+                                article_args.append(
+                                    (
+                                        title,
+                                        id,
+                                        wiki,
+                                        self.arg_text,
+                                        self.arg_links_file,
+                                        self.arg_categories_file,
+                                        self.arg_redirects_file,
+                                        self.arg_references,
                                     )
-                                    # self.arg_lnk_file.flush()
-                                if category_text and self.arg_cat_file:
-                                    self.arg_cat_file.write(
-                                        category_text.encode(DEFAULT_ENCODING)
-                                    )
-                                    # self.arg_cat_file.flush()
-                                if redirect_text and self.arg_red_file:
-                                    self.arg_red_file.write(
-                                        redirect_text.encode(DEFAULT_ENCODING)
-                                    )
-                                    # self.arg_red_file.flush()
-                                if output:
-                                    if self.arg_output == sys.stdout:
-                                        print(output.decode())
-                                    elif self.arg_output is not None:
-                                        self.arg_output.write(output)
-                                        # self.arg_output.flush()  # Ensure immediate write
-                            article_args = []
+                                )
 
-                    except TimeoutError:
-                        sys.stderr.write(
-                            f"\nWARNING: Skipping article. Took longer than {REGEX_TIMEOUT} seconds to parse.\n"
-                        )
-                        continue
-                    except KeyboardInterrupt:
-                        sys.stderr.write("\nWARNING: Prematurely aborted parsing.\n")
-                        break
-                    except IOError:
-                        sys.stderr.write("\nERROR: I/O error.\n")
-                        break
-                    except:
-                        import traceback
+                                element.clear()
+                                while element.getprevious() is not None:
+                                    del element.getparent()[0]
 
-                        sys.stderr.write(
-                            f"\nWARNING: Skipping article due to unexpected error: {traceback.format_exc()}\n"
-                        )
-                        continue
+                            # Process articles in chunks to limit memory usage
+                            if (
+                                len(article_args) >= self.jobs * ARTICLES_PER_JOB
+                            ):  # Process in small batches
+                                results = pool.imap(process_article, article_args)
+                                for (
+                                    output,
+                                    link_text,
+                                    category_text,
+                                    redirect_text,
+                                ) in results:
+                                    if link_text and self.arg_lnk_file:
+                                        self.arg_lnk_file.write(
+                                            link_text.encode(DEFAULT_ENCODING)
+                                        )
+                                        # self.arg_lnk_file.flush()
+                                    if category_text and self.arg_cat_file:
+                                        self.arg_cat_file.write(
+                                            category_text.encode(DEFAULT_ENCODING)
+                                        )
+                                        # self.arg_cat_file.flush()
+                                    if redirect_text and self.arg_red_file:
+                                        self.arg_red_file.write(
+                                            redirect_text.encode(DEFAULT_ENCODING)
+                                        )
+                                        # self.arg_red_file.flush()
+                                    if output:
+                                        if self.arg_output == sys.stdout:
+                                            print(output.decode())
+                                        elif self.arg_output is not None:
+                                            self.arg_output.write(output)
+                                            # self.arg_output.flush()  # Ensure immediate write
+                                article_args = []
 
-                # Process remaining articles
-                if article_args:
-                    results = pool.imap(process_article, article_args)
-                    for output, link_text, category_text, redirect_text in results:
-                        if link_text and self.arg_lnk_file:
-                            self.arg_lnk_file.write(link_text.encode(DEFAULT_ENCODING))
-                            # self.arg_lnk_file.flush()
-                        if category_text and self.arg_cat_file:
-                            self.arg_cat_file.write(
-                                category_text.encode(DEFAULT_ENCODING)
+                        except TimeoutError:
+                            sys.stderr.write(
+                                f"\nWARNING: Skipping article. Took longer than {REGEX_TIMEOUT} seconds to parse.\n"
                             )
-                            # self.arg_cat_file.flush()
-                        if redirect_text and self.arg_red_file:
-                            self.arg_red_file.write(
-                                redirect_text.encode(DEFAULT_ENCODING)
+                            continue
+                        except KeyboardInterrupt:
+                            sys.stderr.write(
+                                "\nWARNING: Prematurely aborted parsing.\n"
                             )
-                            # self.arg_red_file.flush()
-                        if output:
-                            if self.arg_output == sys.stdout:
-                                print(output.decode())
-                            elif self.arg_output is not None:
-                                self.arg_output.write(output)
-                                # self.arg_output.flush()  # Ensure immediate write
+                            interrupted = True
+                            break
+                        except IOError:
+                            sys.stderr.write("\nERROR: I/O error.\n")
+                            break
+                        except SystemExit:
+                            # Silently handle SystemExit from signal handler
+                            interrupted = True
+                            break
+                        except:
+                            import traceback
+
+                            sys.stderr.write(
+                                f"\nWARNING: Skipping article due to unexpected error: {traceback.format_exc()}\n"
+                            )
+                            continue
+
+                    # Process remaining articles
+                    if article_args and not interrupted:
+                        results = pool.imap(process_article, article_args)
+                        for output, link_text, category_text, redirect_text in results:
+                            if link_text and self.arg_lnk_file:
+                                self.arg_lnk_file.write(
+                                    link_text.encode(DEFAULT_ENCODING)
+                                )
+                                # self.arg_lnk_file.flush()
+                            if category_text and self.arg_cat_file:
+                                self.arg_cat_file.write(
+                                    category_text.encode(DEFAULT_ENCODING)
+                                )
+                                # self.arg_cat_file.flush()
+                            if redirect_text and self.arg_red_file:
+                                self.arg_red_file.write(
+                                    redirect_text.encode(DEFAULT_ENCODING)
+                                )
+                                # self.arg_red_file.flush()
+                            if output:
+                                if self.arg_output == sys.stdout:
+                                    print(output.decode())
+                                elif self.arg_output is not None:
+                                    self.arg_output.write(output)
+                                    # self.arg_output.flush()  # Ensure immediate write
+
+            except KeyboardInterrupt:
+                if pool is not None:
+                    pool.terminate()
+                    pool.close()
+                    pool.join()
+                sys.stderr.write("\nINFO: Parsing interrupted, cleaning up.\n")
+                self.cleanup()
+                sys.exit(1)
+            except Exception as e:
+                if pool is not None:
+                    pool.terminate()
+                    pool.close()
+                    pool.join()
+                sys.stderr.write(f"\nERROR: Unexpected error during parsing: {e}\n")
+                self.cleanup()
+                raise
+            finally:
+                signal.signal(signal.SIGINT, original_sigint_handler)  # Restore handler
+                if pool is not None:
+                    pool.close()
+                    pool.join()  # Ensure pool is fully closed
+                self.cleanup()
 
         else:
             # Single-threaded processing (unchanged)
@@ -878,16 +941,20 @@ class Processor(Conductor):
             except (AttributeError, IOError):
                 pass  # Silently ignore if close fails
 
-    def __del__(self):
-        """
-        Ensure cleanup when the object is destroyed.
-        """
+    def cleanup(self):
         # Cleanup
         self.safe_close("arg_input", default_file=sys.stdin, skip_types=(BytesIO,))
         self.safe_close("arg_output", default_file=sys.stdout, skip_types=(BytesIO,))
         self.safe_close("arg_links_file", skip_types=(BytesIO,))
         self.safe_close("arg_categories_file", skip_types=(BytesIO,))
         self.safe_close("arg_redirects_file", skip_types=(BytesIO,))
+
+    def __del__(self):
+        """
+        Ensure proper cleanup when the object is destroyed.
+        """
+        # Cleanup
+        self.cleanup()
 
 
 def process_article(args):
